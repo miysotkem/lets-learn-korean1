@@ -1,597 +1,925 @@
-document.addEventListener("DOMContentLoaded", () => {
-  // =========================================================================
-  // 0. PHÁT ÂM TIẾNG HÀN
-  // =========================================================================
-  function speakKorean(text, rate = 1.0) {
-    if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "ko-KR";
-    u.rate = rate;
-    window.speechSynthesis.speak(u);
+/* ==========================================================================
+   APP.JS - XỬ LÝ TƯƠNG TÁC, PHÁT ÂM, FLASHCARD, AI CHẤM NÓI & GIẤY Ô VUÔNG
+   ========================================================================== */
+
+let state = {
+  topicIndex: 0,
+  section: "vocab",
+  skillTab: "listening",
+  writingSubTab: "wongoji",
+  vocabIndex: 0,
+  isFlipped: false,
+  oxAnswers: {},
+  aiMessages: []
+};
+
+/* --------------------------------------------------------------------------
+   1. TIỆN ÍCH FONT CHỮ & HIỆU ỨNG CLICK SINH ĐỘNG
+   -------------------------------------------------------------------------- */
+function autoFontKo(text) {
+  if (!text) return "";
+  return String(text).replace(
+    /([\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]+)/g,
+    '<span class="ko" lang="ko">$1</span>'
+  );
+}
+
+document.addEventListener("click", (e) => {
+  const layer = document.getElementById("click-fx-layer");
+  if (!layer) return;
+  const shapes = ["✦", "♥", "✿", "★", "♪"];
+  const colors = ["#387CD3", "#F98BC8"];
+
+  for (let i = 0; i < 6; i++) {
+    const p = document.createElement("span");
+    p.className = "click-particle";
+    p.textContent = shapes[Math.floor(Math.random() * shapes.length)];
+    p.style.left = `${e.clientX}px`;
+    p.style.top = `${e.clientY}px`;
+    p.style.color = colors[i % 2];
+    p.style.fontSize = `${12 + Math.random() * 10}px`;
+
+    const angle = (Math.PI * 2 * i) / 6 + (Math.random() - 0.5) * 0.5;
+    const dist = 34 + Math.random() * 32;
+    p.style.setProperty("--tx", `${Math.cos(angle) * dist}px`);
+    p.style.setProperty("--ty", `${Math.sin(angle) * dist - 12}px`);
+    p.style.setProperty("--rot", `${(Math.random() - 0.5) * 140}deg`);
+
+    layer.appendChild(p);
+    setTimeout(() => p.remove(), 760);
   }
-  window._speak = (txt) => speakKorean(txt, 0.95);
+});
 
-  // Trạng thái hiện tại
-  let activeMainTab = "vocab";
-  let vocabTopicIdx = 0;
-  let vocabCardIdx = 0;
-  let isFlipped = false;
-  let vocabMode = "flashcard";
-
-  let grammarSectionIdx = 0;
-
-  let activeSkill = "listening";
-  let listeningModeIdx = 0;
-  let speakingMode = "shadowing";
-  let writingMode = "practice";
-
-  // =========================================================================
-  // 1. THANH MENU Ở CẠNH TRÁI (TỰ ĐỘNG CẬP NHẬT THEO TAB ĐANG CHỌN)
-  // =========================================================================
-  function renderSidebar() {
-    const heading = document.getElementById("sidebar-heading");
-    const menu = document.getElementById("sidebar-menu");
-    menu.innerHTML = "";
-
-    if (activeMainTab === "vocab") {
-      heading.textContent = "Chủ đề từ vựng";
-      STUDY_DATA.vocabTopics.forEach((topic, idx) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = `wire-box side-btn ${idx === vocabTopicIdx ? "active" : ""}`;
-        btn.textContent = topic.title;
-        btn.addEventListener("click", () => {
-          vocabTopicIdx = idx;
-          vocabCardIdx = 0;
-          isFlipped = false;
-          renderSidebar();
-          renderVocab();
-        });
-        menu.appendChild(btn);
-      });
-    } else if (activeMainTab === "grammar") {
-      heading.textContent = "Mục ngữ pháp";
-      STUDY_DATA.grammarSections.forEach((sec, idx) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = `wire-box side-btn ${idx === grammarSectionIdx ? "active" : ""}`;
-        btn.textContent = sec.title;
-        btn.addEventListener("click", () => {
-          grammarSectionIdx = idx;
-          renderSidebar();
-          renderGrammar();
-        });
-        menu.appendChild(btn);
-      });
-    } else if (activeMainTab === "skills") {
-      if (activeSkill === "listening") {
-        heading.textContent = "Dạng bài nghe";
-        STUDY_DATA.skills.listening.modes.forEach((m, idx) => {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = `wire-box side-btn ${idx === listeningModeIdx ? "active" : ""}`;
-          btn.textContent = m.label;
-          btn.addEventListener("click", () => {
-            listeningModeIdx = idx;
-            renderSidebar();
-            renderListening();
-          });
-          menu.appendChild(btn);
-        });
-      } else if (activeSkill === "speaking") {
-        heading.textContent = "Phương pháp nói";
-        STUDY_DATA.skills.speaking.modes.forEach((m) => {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = `wire-box side-btn ${m.id === speakingMode ? "active" : ""}`;
-          btn.textContent = m.label;
-          btn.addEventListener("click", () => {
-            speakingMode = m.id;
-            renderSidebar();
-            renderSpeaking();
-          });
-          menu.appendChild(btn);
-        });
-      } else if (activeSkill === "reading") {
-        heading.textContent = "Bài đọc";
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "wire-box side-btn active";
-        btn.textContent = "Tích Đúng / Sai (O/X)";
-        menu.appendChild(btn);
-      } else if (activeSkill === "writing") {
-        heading.textContent = "Phần luyện viết";
-        STUDY_DATA.skills.writing.modes.forEach((m) => {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = `wire-box side-btn ${m.id === writingMode ? "active" : ""}`;
-          btn.textContent = m.label;
-          btn.addEventListener("click", () => {
-            writingMode = m.id;
-            renderSidebar();
-            renderWriting();
-          });
-          menu.appendChild(btn);
-        });
-      }
-    }
+/* --------------------------------------------------------------------------
+   2. PHÁT ÂM TIẾNG HÀN (WEB SPEECH API)
+   -------------------------------------------------------------------------- */
+function speakKorean(text, rate = 0.95) {
+  if (!("speechSynthesis" in window)) {
+    alert("Trình duyệt chưa hỗ trợ đọc giọng nói tự động. Hãy dùng Chrome hoặc Edge nhé!");
+    return;
   }
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "ko-KR";
+  utter.rate = rate;
 
-  // =========================================================================
-  // 2. CHUYỂN 3 TAB CHÍNH
-  // =========================================================================
-  document.querySelectorAll(".main-tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".main-tab").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-      btn.classList.add("active");
-      activeMainTab = btn.dataset.tab;
-      document.getElementById(`tab-${activeMainTab}`).classList.add("active");
-      renderSidebar();
-    });
-  });
+  const voices = window.speechSynthesis.getVoices();
+  const koVoice = voices.find((v) => v.lang.includes("ko"));
+  if (koVoice) utter.voice = koVoice;
 
-  // =========================================================================
-  // 3. TAB TỪ VỰNG (FLASHCARD + QUIZ)
-  // =========================================================================
-  function renderVocab() {
-    const topic = STUDY_DATA.vocabTopics[vocabTopicIdx];
-    const flashView = document.getElementById("vocab-flashcard-view");
-    const quizView = document.getElementById("vocab-quiz-view");
+  window.speechSynthesis.speak(utter);
+}
 
-    if (vocabMode === "flashcard") {
-      flashView.classList.remove("hidden");
-      quizView.classList.add("hidden");
+if ("speechSynthesis" in window) {
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
 
-      const card = topic.items[vocabCardIdx];
-      document.getElementById("vocab-counter").textContent = `${vocabCardIdx + 1} / ${topic.items.length}`;
-      document.getElementById("vocab-chunk").textContent = card.chunk;
-      document.getElementById("vocab-meaning").textContent = card.meaning;
-      document.getElementById("vocab-example-ko").textContent = card.exampleKo;
-      document.getElementById("vocab-example-vi").textContent = card.exampleVi;
-      document.getElementById("vocab-note").textContent = card.note;
+/* --------------------------------------------------------------------------
+   3. THANH ĐIỀU HƯỚNG THỤT RA THỤT VÀO
+   -------------------------------------------------------------------------- */
+function setupSidebarToggle() {
+  const sidebar = document.getElementById("sidebar");
+  const mainWrapper = document.getElementById("main-wrapper");
+  const toggleBtn = document.getElementById("sidebar-toggle-btn");
+  const closeBtn = document.getElementById("sidebar-close-btn");
 
-      document.getElementById("card-front").classList.toggle("hidden", isFlipped);
-      document.getElementById("card-back").classList.toggle("hidden", !isFlipped);
-
-      const imgEl = document.getElementById("vocab-img");
-      const phEl = document.getElementById("vocab-img-placeholder");
-      if (card.pinterestImg) {
-        imgEl.src = card.pinterestImg;
-        imgEl.classList.remove("hidden");
-        phEl.classList.add("hidden");
-      } else {
-        imgEl.classList.add("hidden");
-        phEl.classList.remove("hidden");
-      }
+  const toggleMenu = () => {
+    const isMobile = window.innerWidth <= 860;
+    if (isMobile) {
+      sidebar.classList.toggle("mobile-open");
     } else {
-      flashView.classList.add("hidden");
-      quizView.classList.remove("hidden");
-      const item = topic.items[vocabCardIdx];
-      quizView.innerHTML = `
-        <div class="wire-box prompt-box">
-          <p style="margin:0 0 8px;">Nghĩa của cụm từ sau là gì?</p>
-          <p class="ko big-word">${item.chunk}</p>
-          <button type="button" class="wire-box mini-btn" onclick="window._speak('${item.chunk}')">🔊 Nghe phát âm</button>
+      sidebar.classList.toggle("collapsed");
+      mainWrapper.classList.toggle("expanded");
+    }
+  };
+
+  toggleBtn.addEventListener("click", toggleMenu);
+  closeBtn.addEventListener("click", toggleMenu);
+}
+
+function renderSidebar() {
+  const nav = document.getElementById("topic-nav");
+  let lastBook = "";
+
+  nav.innerHTML = KOREAN_CURRICULUM.map((topic, idx) => {
+    const isCurrentTopic = idx === state.topicIndex;
+    const bookBadge = topic.book !== lastBook
+      ? `<div class="book-divider">${topic.book}</div>`
+      : "";
+    lastBook = topic.book;
+
+    return `
+      ${bookBadge}
+      <div class="topic-group ${isCurrentTopic ? "active-topic open" : ""}" id="topic-group-${idx}">
+        <button class="topic-header-btn pop-click" onclick="toggleTopicAccordion(${idx})">
+          <span>${topic.code}: ${topic.titleVi} (<span class="ko" lang="ko">${topic.titleKo}</span>)</span>
+          <span>▾</span>
+        </button>
+        <div class="topic-sublist">
+          <button class="nav-part-btn pop-click ${isCurrentTopic && state.section === "vocab" ? "active" : ""}"
+                  onclick="selectLesson(${idx}, 'vocab')">
+            <img src="images/icon-vocab.png" alt="" class="nav-part-icon" onerror="this.style.display='none'" />
+            <span>1. Từ vựng theo cụm</span>
+          </button>
+          <button class="nav-part-btn pop-click ${isCurrentTopic && state.section === "grammar" ? "active" : ""}"
+                  onclick="selectLesson(${idx}, 'grammar')">
+            <img src="images/icon-grammar.png" alt="" class="nav-part-icon" onerror="this.style.display='none'" />
+            <span>2. Ngữ pháp &amp; Dịch câu</span>
+          </button>
+          <button class="nav-part-btn pop-click ${isCurrentTopic && state.section === "skills" ? "active" : ""}"
+                  onclick="selectLesson(${idx}, 'skills')">
+            <img src="images/icon-skills.png" alt="" class="nav-part-icon" onerror="this.style.display='none'" />
+            <span>3. Bốn kỹ năng (Nghe-Nói-Đọc-Viết)</span>
+          </button>
         </div>
-        <div class="stack-list">
-          ${topic.items.map((opt, i) => `
-            <div class="wire-box stack-card clickable" data-qidx="${i}">${opt.meaning}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function toggleTopicAccordion(idx) {
+  const el = document.getElementById(`topic-group-${idx}`);
+  if (el) el.classList.toggle("open");
+}
+
+function selectLesson(topicIdx, sectionName) {
+  const topicChanged = state.topicIndex !== topicIdx;
+  state.topicIndex = topicIdx;
+  state.section = sectionName;
+
+  if (topicChanged) {
+    state.vocabIndex = 0;
+    state.isFlipped = false;
+    state.oxAnswers = {};
+    const promptData = KOREAN_CURRICULUM[topicIdx].skills.speaking.aiPrompt;
+    state.aiMessages = [
+      { sender: "ai", ko: promptData.aiOpeningKo, vi: promptData.aiOpeningVi }
+    ];
+  }
+
+  if (window.innerWidth <= 860) {
+    document.getElementById("sidebar").classList.remove("mobile-open");
+  }
+
+  renderSidebar();
+  renderMainLesson();
+}
+
+/* --------------------------------------------------------------------------
+   4. RENDER MÀN HÌNH BÀI HỌC CHÍNH
+   -------------------------------------------------------------------------- */
+function renderMainLesson() {
+  const topic = KOREAN_CURRICULUM[state.topicIndex];
+  const breadcrumb = document.getElementById("current-breadcrumb");
+  const container = document.getElementById("lesson-container");
+
+  const sectionNames = {
+    vocab: "Phần 1: Từ vựng theo cụm (Flashcard)",
+    grammar: "Phần 2: Ngữ pháp & Luyện dịch câu",
+    skills: "Phần 3: Bốn kỹ năng (Nghe - Nói - Đọc - Viết)"
+  };
+
+  breadcrumb.innerHTML = `${topic.code}: ${topic.titleVi} (<span class="ko" lang="ko">${topic.titleKo}</span>) • <span class="highlight-pink">${sectionNames[state.section]}</span>`;
+
+  if (state.section === "vocab") {
+    renderVocabSection(topic, container);
+  } else if (state.section === "grammar") {
+    renderGrammarSection(topic, container);
+  } else {
+    renderSkillsSection(topic, container);
+  }
+}
+
+/* ==========================================================================
+   PHẦN 1: TỪ VỰNG THEO CỤM (FLASHCARD KHÔNG ẢNH + PHÁT ÂM)
+   ========================================================================== */
+function renderVocabSection(topic, container) {
+  const list = topic.vocabChunks;
+  const card = list[state.vocabIndex];
+
+  container.innerHTML = `
+    <div class="section-topbar">
+      <h2 class="section-heading">Từ vựng theo cụm - ${topic.code} (<span class="ko" lang="ko">${topic.titleKo}</span>)</h2>
+      <span class="highlight-pink">Bấm vào thẻ để lật mặt sau!</span>
+    </div>
+
+    <div class="flashcard-stage">
+      <div class="flashcard-wrapper ${state.isFlipped ? "flipped" : ""}" onclick="flipFlashcard()">
+        <div class="flashcard-inner">
+          <!-- MẶT TRƯỚC -->
+          <div class="flashcard-face flashcard-front">
+            <span class="card-level-pill">${topic.book} • Cụm từ #${state.vocabIndex + 1}</span>
+
+            <div class="vocab-chunk-ko ko" lang="ko">${card.ko}</div>
+
+            <div class="audio-controls" onclick="event.stopPropagation()">
+              <button class="btn btn-primary pop-click" onclick="speakKorean('${card.ko}', 0.95)">
+                🔊 Nghe phát âm chuẩn
+              </button>
+              <button class="btn btn-pink-outline pop-click" onclick="speakKorean('${card.ko}', 0.65)">
+                🐢 Nghe chậm
+              </button>
+            </div>
+          </div>
+
+          <!-- MẶT SAU -->
+          <div class="flashcard-face flashcard-back">
+            <div class="vocab-meaning-vi">${card.vi}</div>
+
+            <div class="vocab-breakdown">
+              <b>Phân tích cấu tạo cụm:</b><br/>
+              ${autoFontKo(card.breakdown)}
+            </div>
+
+            <div class="vocab-example-box">
+              <div class="ko" lang="ko" style="font-size:1.25rem; font-weight:700;">${card.exampleKo}</div>
+              <div style="font-size:0.92rem; margin:4px 0 8px;">${card.exampleVi}</div>
+              <button class="btn btn-sm btn-primary pop-click" onclick="event.stopPropagation(); speakKorean('${card.exampleKo}', 0.92)">
+                🔊 Nghe câu ví dụ
+              </button>
+            </div>
+
+            <div style="font-size:0.86rem; color:#F98BC8; font-weight:700;">
+              ${autoFontKo(card.importantNote)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flashcard-nav">
+        <button class="btn pop-click" onclick="changeFlashcard(-1)">← Thẻ trước</button>
+        <span class="card-counter">Thẻ ${state.vocabIndex + 1} / ${list.length}</span>
+        <button class="btn pop-click" onclick="changeFlashcard(1)">Thẻ tiếp theo →</button>
+      </div>
+    </div>
+
+    <div class="vocab-grid">
+      ${list.map((item, i) => `
+        <div class="vocab-mini-card pop-click ${i === state.vocabIndex ? "active-card" : ""}"
+             onclick="jumpToFlashcard(${i})">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">
+            <span class="ko" lang="ko" style="font-size:1.35rem; font-weight:700;">${item.ko}</span>
+            <button class="btn btn-sm btn-pink-outline" onclick="event.stopPropagation(); speakKorean('${item.ko}', 0.95)">🔊</button>
+          </div>
+          <div style="font-weight:700; color:#F98BC8;">${item.vi}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function flipFlashcard() {
+  state.isFlipped = !state.isFlipped;
+  const el = document.querySelector(".flashcard-wrapper");
+  if (el) el.classList.toggle("flipped", state.isFlipped);
+}
+
+function changeFlashcard(delta) {
+  const len = KOREAN_CURRICULUM[state.topicIndex].vocabChunks.length;
+  state.vocabIndex = (state.vocabIndex + delta + len) % len;
+  state.isFlipped = false;
+  renderMainLesson();
+}
+
+function jumpToFlashcard(idx) {
+  state.vocabIndex = idx;
+  state.isFlipped = false;
+  renderMainLesson();
+}
+
+/* ==========================================================================
+   PHẦN 2: NGỮ PHÁP THEO CHỦ ĐỀ + LUYỆN DỊCH CÂU
+   ========================================================================== */
+function renderGrammarSection(topic, container) {
+  container.innerHTML = `
+    <div class="section-topbar">
+      <h2 class="section-heading">Ngữ pháp trọng tâm - ${topic.code} (<span class="ko" lang="ko">${topic.titleKo}</span>)</h2>
+      <span class="highlight-pink">Màu hồng là quy tắc chia &amp; biến âm cần lưu ý!</span>
+    </div>
+
+    <div class="grammar-list">
+      ${topic.grammar.map((g) => `
+        <article class="grammar-card">
+          <div class="grammar-title-row">
+            <span class="grammar-pattern">${autoFontKo(g.pattern)}</span>
+            <span class="grammar-meaning-tag">${g.meaning}</span>
+          </div>
+          <p class="grammar-desc">${autoFontKo(g.explanation)}</p>
+
+          <div class="grammar-caution">
+            <span class="grammar-caution-label">★ Phần cần lưu ý:</span>
+            <span>${autoFontKo(g.caution)}</span>
+          </div>
+
+          <div>
+            <b style="display:block; margin-bottom:8px;">Ví dụ minh họa:</b>
+            ${g.examples.map((ex) => `
+              <div class="example-item">
+                <div>
+                  <div class="ko" lang="ko" style="font-size:1.25rem; font-weight:700;">${ex.ko}</div>
+                  <div style="font-size:0.92rem;">${ex.vi}</div>
+                </div>
+                <button class="btn btn-sm btn-primary pop-click" onclick="speakKorean('${ex.ko}', 0.92)">🔊 Nghe</button>
+              </div>
+            `).join("")}
+          </div>
+        </article>
+      `).join("")}
+    </div>
+
+    <section class="practice-box">
+      <h3 class="practice-box-title">✎ Luyện tập ngữ pháp: Dịch câu sang tiếng Hàn</h3>
+      ${topic.translationExercises.map((ex, idx) => `
+        <div class="translate-item">
+          <div><b>Câu ${idx + 1}:</b> ${ex.vi}</div>
+          <div style="font-size:0.86rem; color:#F98BC8; font-weight:700; margin-top:3px;">
+            Gợi ý từ vựng: ${autoFontKo(ex.hint)}
+          </div>
+          <input type="text" id="trans-input-${idx}" class="ko-input" placeholder="Nhập câu tiếng Hàn của bạn tại đây..." />
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm pop-click" onclick="checkTranslation(${idx})">Kiểm tra đáp án</button>
+            <button class="btn btn-pink-outline btn-sm pop-click" onclick="speakKorean('${ex.answerKo}', 0.9)">🔊 Nghe câu mẫu</button>
+          </div>
+          <div id="trans-feedback-${idx}"></div>
+        </div>
+      `).join("")}
+    </section>
+  `;
+}
+
+function checkTranslation(idx) {
+  const ex = KOREAN_CURRICULUM[state.topicIndex].translationExercises[idx];
+  const userVal = document.getElementById(`trans-input-${idx}`).value.trim();
+  const fb = document.getElementById(`trans-feedback-${idx}`);
+
+  const normalize = (s) => s.replace(/[.?!,\s]+/g, "");
+  if (!userVal) {
+    fb.innerHTML = `<div class="feedback-msg feedback-warn">Bạn hãy nhập câu tiếng Hàn trước khi kiểm tra nhé!</div>`;
+    return;
+  }
+
+  if (normalize(userVal) === normalize(ex.answerKo)) {
+    fb.innerHTML = `
+      <div class="feedback-msg feedback-ok">
+        🎉 Chính xác tuyệt đối! Đáp án chuẩn: <span class="ko" lang="ko">${ex.answerKo}</span><br/>
+        <span style="font-size:0.88rem;">${autoFontKo(ex.note)}</span>
+      </div>`;
+  } else {
+    fb.innerHTML = `
+      <div class="feedback-msg feedback-warn">
+        💡 Hãy đối chiếu với đáp án chuẩn nhé:<br/>
+        • Câu của bạn: <span class="ko" lang="ko">${userVal}</span><br/>
+        • Đáp án gợi ý: <span class="ko" lang="ko" style="color:#387CD3;">${ex.answerKo}</span><br/>
+        • Lưu ý: ${autoFontKo(ex.note)}
+      </div>`;
+  }
+}
+
+/* ==========================================================================
+   PHẦN 3: BỐN KỸ NĂNG (NGHE - NÓI - ĐỌC - VIẾT)
+   ========================================================================== */
+function renderSkillsSection(topic, container) {
+  container.innerHTML = `
+    <div class="skills-tabs">
+      <button class="skill-tab-btn pop-click ${state.skillTab === "listening" ? "active" : ""}" onclick="switchSkillTab('listening')">🎧 Nghe (<span class="ko" lang="ko">듣기</span>)</button>
+      <button class="skill-tab-btn pop-click ${state.skillTab === "speaking" ? "active" : ""}" onclick="switchSkillTab('speaking')">🎙️ Nói (<span class="ko" lang="ko">말하기</span>)</button>
+      <button class="skill-tab-btn pop-click ${state.skillTab === "reading" ? "active" : ""}" onclick="switchSkillTab('reading')">📖 Đọc (<span class="ko" lang="ko">읽기</span>)</button>
+      <button class="skill-tab-btn pop-click ${state.skillTab === "writing" ? "active" : ""}" onclick="switchSkillTab('writing')">✍️ Viết (<span class="ko" lang="ko">쓰기</span>)</button>
+    </div>
+
+    <div id="skill-panel-body" class="skill-panel"></div>
+  `;
+
+  const panel = document.getElementById("skill-panel-body");
+  if (state.skillTab === "listening") renderListeningSkill(topic.skills.listening, panel);
+  if (state.skillTab === "speaking") renderSpeakingSkill(topic.skills.speaking, panel);
+  if (state.skillTab === "reading") renderReadingSkill(topic.skills.reading, panel);
+  if (state.skillTab === "writing") renderWritingSkill(topic.skills.writing, panel);
+}
+
+function switchSkillTab(tab) {
+  state.skillTab = tab;
+  renderMainLesson();
+}
+
+/* --- 3.1 KỸ NĂNG NGHE --- */
+function renderListeningSkill(listenData, panel) {
+  let blankCounter = 0;
+
+  const sentenceHtml = listenData.dictation.segments.map((seg) => {
+    if (typeof seg === "string") {
+      return `<span class="ko" lang="ko" style="font-size:1.3rem;">${seg}</span>`;
+    }
+    const idx = blankCounter++;
+    return `<input type="text" id="listen-blank-${idx}" class="blank-input" placeholder="${seg.hint}" />`;
+  }).join("");
+
+  panel.innerHTML = `
+    <h3 class="section-heading" style="margin-bottom:14px;">${listenData.dictation.title}</h3>
+    <div class="audio-player-bar">
+      <button class="btn btn-primary pop-click" onclick="speakKorean('${listenData.dictation.audioScript}', 0.9)">▶ Nghe bài 1</button>
+      <button class="btn btn-pink-outline pop-click" onclick="speakKorean('${listenData.dictation.audioScript}', 0.68)">🐢 Nghe chậm</button>
+      <button class="btn btn-sm pop-click" onclick="toggleScript('script-1')">Hiện/Ẩn lời thoại</button>
+    </div>
+    <div id="script-1" class="note-box" style="display:none;">
+      <div class="note-box-title">Lời thoại bài nghe:</div>
+      <p class="ko" lang="ko" style="font-size:1.2rem;">${listenData.dictation.audioScript}</p>
+    </div>
+
+    <div style="padding:16px; border:2px solid var(--blue-mid); border-radius:14px; margin-bottom:12px; line-height:2.2;">
+      ${sentenceHtml}
+    </div>
+    <button class="btn btn-pink pop-click" onclick="checkListeningBlanks()">Chấm điểm điền từ</button>
+    <div id="listen-blank-result" style="margin-bottom:26px;"></div>
+
+    <hr style="border:none; border-top:2.5px dashed var(--pink); margin:22px 0;" />
+
+    <h3 class="section-heading" style="margin-bottom:14px;">${listenData.comprehension.title}</h3>
+    <div class="audio-player-bar">
+      <button class="btn btn-primary pop-click" onclick="speakKorean('${listenData.comprehension.audioScript}', 0.9)">▶ Nghe hội thoại bài 2</button>
+      <button class="btn btn-pink-outline pop-click" onclick="speakKorean('${listenData.comprehension.audioScript}', 0.68)">🐢 Nghe chậm</button>
+      <button class="btn btn-sm pop-click" onclick="toggleScript('script-2')">Hiện/Ẩn lời thoại</button>
+    </div>
+    <div id="script-2" class="note-box" style="display:none;">
+      <div class="note-box-title">Lời thoại hội thoại:</div>
+      <p class="ko" lang="ko" style="font-size:1.2rem;">${listenData.comprehension.audioScript}</p>
+    </div>
+
+    <div style="font-weight:700; font-size:1.05rem; margin-bottom:8px;">
+      Câu hỏi: <span class="highlight-pink">${listenData.comprehension.question}</span>
+    </div>
+    <div class="mcq-options">
+      ${listenData.comprehension.options.map((opt, i) => `
+        <label class="mcq-option-label pop-click">
+          <input type="radio" name="listen-mcq" value="${i}" />
+          <span>${autoFontKo(opt)}</span>
+        </label>
+      `).join("")}
+    </div>
+    <button class="btn btn-primary pop-click" style="margin-top:12px;" onclick="checkListeningMcq()">Kiểm tra đáp án</button>
+    <div id="listen-mcq-result"></div>
+  `;
+}
+
+function toggleScript(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
+function checkListeningBlanks() {
+  const blanks = KOREAN_CURRICULUM[state.topicIndex].skills.listening.dictation.segments.filter((s) => typeof s === "object");
+  let correctCount = 0;
+  blanks.forEach((b, i) => {
+    const val = document.getElementById(`listen-blank-${i}`).value.trim().replace(/\s+/g, "");
+    const ans = b.blank.replace(/\s+/g, "");
+    if (val === ans) correctCount++;
+  });
+  const res = document.getElementById("listen-blank-result");
+  const allRight = correctCount === blanks.length;
+  res.innerHTML = `
+    <div class="feedback-msg ${allRight ? "feedback-ok" : "feedback-warn"}">
+      Bạn điền đúng <b>${correctCount}/${blanks.length}</b> chỗ trống!
+      ${!allRight ? `Đáp án chuẩn lần lượt là: <span class="ko" lang="ko">${blanks.map((b) => b.blank).join(" / ")}</span>` : "Tuyệt vời!"}
+    </div>
+  `;
+}
+
+function checkListeningMcq() {
+  const comp = KOREAN_CURRICULUM[state.topicIndex].skills.listening.comprehension;
+  const chosen = document.querySelector('input[name="listen-mcq"]:checked');
+  const res = document.getElementById("listen-mcq-result");
+  if (!chosen) {
+    res.innerHTML = `<div class="feedback-msg feedback-warn">Bạn hãy chọn một đáp án A, B, C hoặc D nhé!</div>`;
+    return;
+  }
+  const isRight = Number(chosen.value) === comp.correctIndex;
+  res.innerHTML = `
+    <div class="feedback-msg ${isRight ? "feedback-ok" : "feedback-warn"}">
+      ${isRight ? "🎉 Chính xác!" : "💡 Chưa chính xác rồi!"} ${autoFontKo(comp.explanation)}
+    </div>
+  `;
+}
+
+/* --- 3.2 KỸ NĂNG NÓI (SHADOWING + AI TUTOR CHẤM CHỮA) --- */
+function renderSpeakingSkill(speakData, panel) {
+  if (state.aiMessages.length === 0) {
+    state.aiMessages = [
+      { sender: "ai", ko: speakData.aiPrompt.aiOpeningKo, vi: speakData.aiPrompt.aiOpeningVi }
+    ];
+  }
+
+  panel.innerHTML = `
+    <div class="speaking-grid">
+      <div>
+        <h3 class="section-heading" style="margin-bottom:10px;">1. Luyện nói đuổi theo giọng mẫu (Shadowing)</h3>
+        <div class="note-box">
+          <div class="note-box-title">Cách luyện tập:</div>
+          <p>Bấm nghe câu mẫu, chú ý ngữ điệu và nối âm, sau đó bấm <b>"🎙️ Bấm để nói"</b> để hệ thống nhận diện phát âm của bạn!</p>
+        </div>
+
+        ${speakData.shadowing.map((item, idx) => `
+          <div class="translate-item">
+            <div class="ko" lang="ko" style="font-size:1.35rem; font-weight:700;">${item.ko}</div>
+            <div style="font-size:0.92rem; margin:3px 0;">${item.vi}</div>
+            <div style="font-size:0.86rem; color:#F98BC8; font-weight:700; margin-bottom:10px;">
+              ★ Lưu ý phát âm: ${autoFontKo(item.tip)}
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-sm btn-primary pop-click" onclick="speakKorean('${item.ko}', 0.92)">🔊 Nghe mẫu</button>
+              <button class="btn btn-sm btn-pink pop-click" onclick="startShadowingMic(${idx})">🎙️ Bấm để nói</button>
+            </div>
+            <div id="shadow-res-${idx}"></div>
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="ai-tutor-card">
+        <div class="ai-header">
+          <div class="ai-avatar">
+            <img src="images/mascot-avatar.png" alt="AI Tutor" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"
+                 onerror="this.style.display='none'; this.parentElement.textContent='AI';" />
+          </div>
+          <div>
+            <h3 style="color:#F98BC8; font-size:1.2rem;">2. Gia sư AI chấm chữa &amp; Luyện hội thoại</h3>
+            <p style="font-size:0.9rem;">Cấu trúc yêu cầu: <b>${autoFontKo(speakData.aiPrompt.structure)}</b> (${speakData.aiPrompt.meaning})</p>
+            <p style="font-size:0.85rem; color:#F98BC8; font-weight:700;">Câu mẫu gợi ý: ${autoFontKo(speakData.aiPrompt.sampleAnswer)}</p>
+          </div>
+        </div>
+
+        <div id="ai-chat-log" class="ai-chat-log">
+          ${state.aiMessages.map((m) => `
+            <div class="chat-bubble ${m.sender === "ai" ? "chat-ai" : "chat-user"}">
+              ${m.ko ? `<div class="ko" lang="ko" style="font-size:1.22rem; font-weight:700;">${m.ko}</div>` : ""}
+              ${m.vi ? `<div style="font-size:0.9rem; margin-top:3px;">${autoFontKo(m.vi)}</div>` : ""}
+              ${m.sender === "ai" && m.ko ? `<button class="btn btn-sm btn-primary" style="margin-top:6px;" onclick="speakKorean('${m.ko.replace(/'/g, "")}', 0.92)">🔊 Nghe AI nói</button>` : ""}
+            </div>
           `).join("")}
         </div>
-      `;
-      quizView.querySelectorAll(".stack-card").forEach((el) => {
-        el.addEventListener("click", () => {
-          const picked = Number(el.dataset.qidx);
-          el.classList.add(picked === vocabCardIdx ? "correct" : "wrong");
-        });
-      });
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="text" id="ai-speak-input" class="ko-input" style="flex:1; margin:0;"
+                 placeholder="Nói qua Micro hoặc gõ câu tiếng Hàn của bạn vào đây..." />
+          <button class="btn btn-pink-outline pop-click" onclick="recordToAiInput()" title="Nhận diện giọng nói tiếng Hàn">🎙️ Nói</button>
+          <button class="btn btn-pink pop-click" onclick="submitToAiTutor()">Gửi AI chấm chữa ➤</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const rec = new SR();
+  rec.lang = "ko-KR";
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  return rec;
+}
+
+function startShadowingMic(idx) {
+  const target = KOREAN_CURRICULUM[state.topicIndex].skills.speaking.shadowing[idx].ko;
+  const resEl = document.getElementById(`shadow-res-${idx}`);
+  const rec = getSpeechRecognition();
+
+  if (!rec) {
+    resEl.innerHTML = `<div class="feedback-msg feedback-warn">Trình duyệt chưa hỗ trợ thu âm trực tiếp. Bạn hãy dùng Google Chrome / Edge nhé!</div>`;
+    return;
+  }
+
+  resEl.innerHTML = `<div class="feedback-msg feedback-ok">🎙️ Đang nghe bạn đọc... Hãy đọc to câu mẫu nhé!</div>`;
+  rec.start();
+
+  rec.onresult = (event) => {
+    const spoken = event.results[0][0].transcript;
+    const cleanTarget = target.replace(/[?.!,\s]/g, "");
+    const cleanSpoken = spoken.replace(/[?.!,\s]/g, "");
+    let matchChars = 0;
+    for (const ch of cleanSpoken) {
+      if (cleanTarget.includes(ch)) matchChars++;
     }
+    const score = Math.min(100, Math.round((matchChars / Math.max(cleanTarget.length, 1)) * 100));
+
+    resEl.innerHTML = `
+      <div class="feedback-msg ${score >= 75 ? "feedback-ok" : "feedback-warn"}">
+        • Bạn đã đọc: <span class="ko" lang="ko">${spoken}</span><br/>
+        • Độ khớp phát âm: <b>${score}%</b> ${score >= 75 ? "🎉 Phát âm rất rõ ràng!" : "💡 Thử đọc chậm và tròn âm hơn một chút nhé!"}
+      </div>
+    `;
+  };
+
+  rec.onerror = () => {
+    resEl.innerHTML = `<div class="feedback-msg feedback-warn">Không thu được giọng nói. Kiểm tra quyền Micro của trình duyệt nhé!</div>`;
+  };
+}
+
+function recordToAiInput() {
+  const rec = getSpeechRecognition();
+  const input = document.getElementById("ai-speak-input");
+  if (!rec) {
+    alert("Trình duyệt chưa hỗ trợ thu âm trực tiếp. Bạn có thể gõ câu tiếng Hàn vào ô bên cạnh để AI chấm nhé!");
+    return;
+  }
+  input.placeholder = "🎙️ Đang nghe bạn nói tiếng Hàn...";
+  rec.start();
+  rec.onresult = (e) => {
+    input.value = e.results[0][0].transcript;
+    input.placeholder = "Nói qua Micro hoặc gõ câu tiếng Hàn của bạn vào đây...";
+  };
+}
+
+function evaluateKoreanSentence(sentence, topicId) {
+  const notes = [];
+  let score = 10;
+
+  if (!/[\uAC00-\uD7AF]/.test(sentence)) {
+    return {
+      score: 3,
+      feedbackVi: "Bạn hãy nhập câu bằng chữ cái tiếng Hàn (Hangul) để AI chấm chi tiết nhé!",
+      replyKo: "한국어로 다시 말해 주세요!",
+      replyVi: "Bạn hãy thử nói lại bằng tiếng Hàn nhé!"
+    };
   }
 
-  document.querySelectorAll("[data-vmode]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll("[data-vmode]").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      vocabMode = btn.dataset.vmode;
-      renderVocab();
-    });
+  if (!/(입니다|아닙니다|습니다|ㅂ니다|아요|어요|해요|이에요|예요|게요|돼요|됩니다)[.?!]?$/.test(sentence.trim())) {
+    score -= 2;
+    notes.push("Đuôi câu chưa chia lịch sự (nên kết thúc bằng -아요/어요 hoặc -습니다/입니다).");
+  }
+
+  if (!sentence.includes(" ") && sentence.length > 7) {
+    score -= 1;
+    notes.push("Lưu ý quy tắc giãn cách từ (띄어쓰기) giữa các cụm từ.");
+  }
+
+  if (topicId === "q2-bai2" && !/(수 있|수 없|러 가|러 오|러 다)/.test(sentence)) {
+    score -= 1;
+    notes.push("Gợi ý áp dụng đúng ngữ pháp Quyển 2 Bài 2: '-(으)ㄹ 수 있다' hoặc '-(으)러 가다'.");
+  } else if (topicId === "q2-bai11" && !/(는데|은데|인데|ㄹ게요|을게요)/.test(sentence)) {
+    score -= 1;
+    notes.push("Gợi ý áp dụng đúng ngữ pháp Quyển 2 Bài 11: '-(으)ㄴ/는데' hoặc '-(으)ㄹ게요'.");
+  } else if (topicId === "q3-bai1" && !/(기 때문에|면서)/.test(sentence)) {
+    score -= 1;
+    notes.push("Gợi ý áp dụng đúng ngữ pháp Quyển 3 Bài 1: '-기 때문에' hoặc '-(으)면서'.");
+  } else if (topicId === "q4-bai1" && !/(는 바람에|다 보면)/.test(sentence)) {
+    score -= 1;
+    notes.push("Gợi ý áp dụng đúng ngữ pháp Quyển 4 Bài 1: '-는 바람에' hoặc '-다 보면'.");
+  }
+
+  const feedbackVi = notes.length === 0
+    ? `Điểm AI: ${score}/10 — Câu chuẩn ngữ pháp trung cấp, chia đuôi và tiểu từ rất tự nhiên!`
+    : `Điểm AI: ${score}/10 — Cần lưu ý: ${notes.join(" ")}`;
+
+  const followUps = {
+    "q2-bai2": { ko: "와, 멋지네요! 그 취미는 누구와 같이 해요?", vi: "Oa, tuyệt quá! Sở thích đó bạn làm cùng với ai thế?" },
+    "q2-bai11": { ko: "알겠어요! 그럼 도착하기 전에 문자 보내 줄래요?", vi: "Mình hiểu rồi! Vậy trước khi đến nơi nhắn tin cho mình nhé?" },
+    "q3-bai1": { ko: "정말 열심히 생활하네요! 졸업 후에는 어떤 계획을 세웠어요?", vi: "Bạn sống chăm chỉ thật đấy! Sau khi tốt nghiệp bạn có kế hoạch gì chưa?" },
+    "q4-bai1": { ko: "맞아요, 계획적인 소비가 중요하죠. 돈을 아끼는 나만의 비법이 있어요?", vi: "Đúng vậy, tiêu dùng có kế hoạch rất quan trọng. Bạn có bí quyết tiết kiệm riêng nào không?" }
+  };
+  const nextTurn = followUps[topicId] || { ko: "아주 잘했어요! 다음 문장도 만들어 볼까요?", vi: "Rất tốt! Thử đặt thêm một câu nữa nhé?" };
+
+  return { score, feedbackVi, replyKo: nextTurn.ko, replyVi: nextTurn.vi };
+}
+
+function submitToAiTutor() {
+  const input = document.getElementById("ai-speak-input");
+  const text = input.value.trim();
+  if (!text) return;
+
+  const topicId = KOREAN_CURRICULUM[state.topicIndex].id;
+  state.aiMessages.push({ sender: "user", ko: text });
+
+  const result = evaluateKoreanSentence(text, topicId);
+  state.aiMessages.push({
+    sender: "ai",
+    ko: result.replyKo,
+    vi: `${result.feedbackVi} — AI hỏi tiếp: "${result.replyVi}"`
   });
 
-  document.getElementById("btn-flip-vocab").addEventListener("click", () => {
-    isFlipped = !isFlipped;
-    renderVocab();
-  });
-  document.getElementById("btn-speak-vocab").addEventListener("click", () => {
-    speakKorean(STUDY_DATA.vocabTopics[vocabTopicIdx].items[vocabCardIdx].chunk, 0.95);
-  });
-  document.getElementById("btn-speak-example").addEventListener("click", () => {
-    speakKorean(STUDY_DATA.vocabTopics[vocabTopicIdx].items[vocabCardIdx].exampleKo, 0.95);
-  });
-  document.getElementById("btn-prev-vocab").addEventListener("click", () => {
-    const len = STUDY_DATA.vocabTopics[vocabTopicIdx].items.length;
-    vocabCardIdx = (vocabCardIdx - 1 + len) % len;
-    isFlipped = false;
-    renderVocab();
-  });
-  document.getElementById("btn-next-vocab").addEventListener("click", () => {
-    const len = STUDY_DATA.vocabTopics[vocabTopicIdx].items.length;
-    vocabCardIdx = (vocabCardIdx + 1) % len;
-    isFlipped = false;
-    renderVocab();
-  });
-  document.getElementById("btn-apply-pinterest").addEventListener("click", () => {
-    const url = document.getElementById("pinterest-url-input").value.trim();
-    if (!url) return;
-    STUDY_DATA.vocabTopics[vocabTopicIdx].items[vocabCardIdx].pinterestImg = url;
-    document.getElementById("pinterest-url-input").value = "";
-    renderVocab();
-  });
+  speakKorean(result.replyKo, 0.92);
+  renderMainLesson();
+}
 
-  // =========================================================================
-  // 4. TAB NGỮ PHÁP (GIỐNG ẢNH 3: CÁC THẺ XẾP DỌC + KHUNG VÍ DỤ LỒNG BÊN TRONG)
-  // =========================================================================
-  function renderGrammar() {
-    const stack = document.getElementById("grammar-stack");
-    const section = STUDY_DATA.grammarSections[grammarSectionIdx];
-    stack.innerHTML = "";
+/* --- 3.3 KỸ NĂNG ĐỌC (TÍCH O / X) --- */
+function renderReadingSkill(readData, panel) {
+  panel.innerHTML = `
+    <h3 class="section-heading" style="margin-bottom:12px;">${readData.title}</h3>
+    <div class="reading-passage ko" lang="ko">
+      ${readData.passage}
+    </div>
 
-    if (section.isPractice) {
-      section.cloze.forEach((ex, i) => {
-        const card = document.createElement("div");
-        card.className = "wire-box stack-card";
-        card.innerHTML = `
-          <p class="ko" style="margin:0 0 10px;"><strong>Đục lỗ ${i + 1}:</strong> ${ex.question}</p>
-          <div class="pinterest-bar">
-            <input type="text" id="cloze-in-${i}" placeholder="Nhập từ còn thiếu..." />
-            <button type="button" id="cloze-btn-${i}" class="wire-box mini-btn">Kiểm tra</button>
+    <table class="ox-table">
+      <thead>
+        <tr>
+          <th>Nội dung câu hỏi</th>
+          <th class="ox-choice-cell">Đúng (O)</th>
+          <th class="ox-choice-cell">Sai (X)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${readData.statements.map((st, idx) => {
+          const picked = state.oxAnswers[idx];
+          return `
+            <tr>
+              <td>${autoFontKo(st.text)}</td>
+              <td class="ox-choice-cell">
+                <button class="ox-btn pop-click ${picked === true ? "selected-o" : ""}" onclick="pickOx(${idx}, true)">O</button>
+              </td>
+              <td class="ox-choice-cell">
+                <button class="ox-btn pop-click ${picked === false ? "selected-x" : ""}" onclick="pickOx(${idx}, false)">X</button>
+              </td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+
+    <button class="btn btn-primary pop-click" onclick="gradeReadingOx()">Chấm điểm bài đọc</button>
+    <div id="reading-ox-result"></div>
+  `;
+}
+
+function pickOx(idx, val) {
+  state.oxAnswers[idx] = val;
+  renderMainLesson();
+}
+
+function gradeReadingOx() {
+  const statements = KOREAN_CURRICULUM[state.topicIndex].skills.reading.statements;
+  const res = document.getElementById("reading-ox-result");
+  let score = 0;
+
+  const details = statements.map((st, idx) => {
+    const picked = state.oxAnswers[idx];
+    const ok = picked === st.isTrue;
+    if (ok) score++;
+    return `
+      <div style="margin-top:6px;">
+        • Câu ${idx + 1}: ${ok ? "✅ Đúng" : "❌ Sai"} (Đáp án: <b>${st.isTrue ? "O" : "X"}</b>) — ${autoFontKo(st.proof)}
+      </div>
+    `;
+  }).join("");
+
+  res.innerHTML = `
+    <div class="feedback-msg ${score === statements.length ? "feedback-ok" : "feedback-warn"}">
+      Kết quả đọc hiểu: <b>${score}/${statements.length}</b> câu đúng!
+      ${details}
+    </div>
+  `;
+}
+
+/* --- 3.4 KỸ NĂNG VIẾT --- */
+function renderWritingSkill(writeData, panel) {
+  panel.innerHTML = `
+    <div class="writing-subtabs">
+      <button class="btn btn-sm pop-click ${state.writingSubTab === "wongoji" ? "btn-pink" : ""}" onclick="switchWritingTab('wongoji')">
+        1. Quy tắc giấy ô vuông (<span class="ko" lang="ko">원고지</span>)
+      </button>
+      <button class="btn btn-sm pop-click ${state.writingSubTab === "structures" ? "btn-pink" : ""}" onclick="switchWritingTab('structures')">
+        2. Cấu trúc hô ứng &amp; Từ văn viết
+      </button>
+      <button class="btn btn-sm pop-click ${state.writingSubTab === "practice" ? "btn-pink" : ""}" onclick="switchWritingTab('practice')">
+        3. Luyện viết trực tiếp trên ô vuông
+      </button>
+    </div>
+
+    <div id="writing-sub-body"></div>
+  `;
+
+  const subBody = document.getElementById("writing-sub-body");
+
+  if (state.writingSubTab === "wongoji") {
+    subBody.innerHTML = `
+      <h3 class="section-heading" style="margin-bottom:12px;">Cẩm nang trình bày giấy ô vuông Hàn Quốc (<span class="ko" lang="ko">원고지 작성법</span>)</h3>
+      <div class="wongoji-rules-grid">
+        ${WRITING_HANDBOOK.wongojiRules.map((r) => `
+          <div class="rule-card ${r.important ? "important-rule" : ""}">
+            <div style="font-weight:700; margin-bottom:6px; color:${r.important ? "#F98BC8" : "#387CD3"};">
+              ${autoFontKo(r.title)}
+            </div>
+            <p style="font-size:0.93rem; line-height:1.55;">${autoFontKo(r.content)}</p>
           </div>
-          <p id="cloze-out-${i}" class="note" style="margin:8px 0 0;"></p>
-        `;
-        stack.appendChild(card);
-        document.getElementById(`cloze-btn-${i}`).addEventListener("click", () => {
-          const val = document.getElementById(`cloze-in-${i}`).value.trim();
-          document.getElementById(`cloze-out-${i}`).textContent =
-            val === ex.answer ? `Chính xác! ${ex.note}` : `Đáp án là "${ex.answer}". ${ex.note}`;
-        });
-      });
-
-      section.translate.forEach((ex, i) => {
-        const card = document.createElement("div");
-        card.className = "wire-box stack-card";
-        card.innerHTML = `
-          <p style="margin:0 0 10px;"><strong>Dịch câu ${i + 1}:</strong> ${ex.vi}</p>
-          <div class="pinterest-bar">
-            <input type="text" id="trans-in-${i}" placeholder="Nhập câu tiếng Hàn..." />
-            <button type="button" id="trans-btn-${i}" class="wire-box mini-btn">Đáp án</button>
+        `).join("")}
+      </div>
+    `;
+  } else if (state.writingSubTab === "structures") {
+    subBody.innerHTML = `
+      <h3 class="section-heading" style="margin-bottom:12px;">Các cấu trúc hô ứng (<span class="ko" lang="ko">호응 표현</span>)</h3>
+      <div class="grammar-list">
+        ${WRITING_HANDBOOK.correlativeStructures.map((c) => `
+          <div class="rule-card important-rule">
+            <div style="font-weight:700; font-size:1.2rem; color:#F98BC8;">${autoFontKo(c.pattern)}</div>
+            <div style="font-weight:700; margin:4px 0;">Ý nghĩa: ${c.meaning}</div>
+            <div class="ko" lang="ko" style="font-size:1.2rem;">${c.exampleKo}</div>
+            <div style="font-size:0.9rem;">${c.exampleVi}</div>
           </div>
-          <p id="trans-out-${i}" class="note" style="margin:8px 0 0;"></p>
-        `;
-        stack.appendChild(card);
-        document.getElementById(`trans-btn-${i}`).addEventListener("click", () => {
-          document.getElementById(`trans-out-${i}`).innerHTML =
-            `Đáp án mẫu: <span class="ko">${ex.answerKo}</span> (${ex.note})`;
-        });
-      });
-      return;
+        `).join("")}
+      </div>
+
+      <h3 class="section-heading" style="margin-bottom:12px;">Bảng đối chiếu Văn nói vs. Từ chỉ dùng trong Văn viết (<span class="ko" lang="ko">문어체</span>)</h3>
+      <table class="ox-table">
+        <thead>
+          <tr>
+            <th>Văn nói (<span class="ko" lang="ko">구어체</span>)</th>
+            <th style="color:#F98BC8;">Văn viết chuẩn (<span class="ko" lang="ko">문어체</span> - Cần lưu ý)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${WRITING_HANDBOOK.writtenVsSpoken.map((row) => `
+            <tr>
+              <td>${autoFontKo(row.spoken)}</td>
+              <td style="font-weight:700; color:#F98BC8;">${autoFontKo(row.written)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  } else {
+    subBody.innerHTML = `
+      <div class="note-box">
+        <div class="note-box-title">${autoFontKo(writeData.topicTitle)}</div>
+        <p><b>Yêu cầu sử dụng:</b> <span class="highlight-pink">${writeData.requiredStructures.map(autoFontKo).join(" • ")}</span></p>
+      </div>
+
+      <textarea id="wongoji-input" class="wongoji-textarea" oninput="updateWongojiGrid()"
+                placeholder="Gõ đoạn văn tiếng Hàn tại đây (hệ thống tự động lùi đầu dòng 1 ô và dàn lên giấy ô vuông bên dưới)...">${writeData.sampleEssay}</textarea>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px;">
+        <span id="wongoji-char-count" style="font-weight:700; color:#F98BC8;">Số ký tự: 0 chữ</span>
+        <button class="btn btn-primary btn-sm pop-click" onclick="checkWritingStyle()">Kiểm tra văn viết &amp; cấu trúc</button>
+      </div>
+      <div id="writing-check-result"></div>
+
+      <div id="wongoji-grid-preview" class="wongoji-paper" aria-label="Giấy ô vuông Hàn Quốc"></div>
+    `;
+    updateWongojiGrid();
+  }
+}
+
+function switchWritingTab(sub) {
+  state.writingSubTab = sub;
+  renderMainLesson();
+}
+
+function updateWongojiGrid() {
+  const textarea = document.getElementById("wongoji-input");
+  const grid = document.getElementById("wongoji-grid-preview");
+  const counter = document.getElementById("wongoji-char-count");
+  if (!textarea || !grid) return;
+
+  const rawText = textarea.value;
+  counter.textContent = `Số ký tự (kể cả dấu cách): ${rawText.length} chữ`;
+
+  const cols = window.innerWidth <= 860 ? 10 : 20;
+  const cells = [""]; // Lùi 1 ô đầu dòng
+
+  for (let i = 0; i < rawText.length; i++) {
+    const ch = rawText[i];
+    if (ch === "\n") {
+      while (cells.length % cols !== 0) cells.push("");
+      cells.push("");
+      continue;
     }
-
-    section.items.forEach((g) => {
-      const suggestionsHtml = g.suggestions
-        ? `<ul style="margin:10px 0 0; padding-left:20px;">${g.suggestions.map((s) => `<li>${s}</li>`).join("")}</ul>`
-        : "";
-
-      stack.innerHTML += `
-        <div class="wire-box stack-card ibis-slot" data-slot="images/grammar-card.png">
-          <h3 class="ko" style="margin:0 0 6px; font-size:22px;">${g.form}</h3>
-          <p style="margin:0 0 10px;"><strong>Ý nghĩa:</strong> ${g.meaning}</p>
-
-          <div class="wire-box inner-box">
-            <p class="ko" style="margin:0 0 6px; font-size:20px;">${g.exampleKo}</p>
-            <p style="margin:0 0 10px;">${g.exampleVi}</p>
-            <button type="button" class="wire-box mini-btn" onclick="window._speak('${g.exampleKo}')">🔊 Nghe ví dụ</button>
-          </div>
-
-          ${suggestionsHtml}
-          <p class="note" style="margin:10px 0 0;">${g.note}</p>
-        </div>
-      `;
-    });
-  }
-
-  // =========================================================================
-  // 5. TAB 4 KỸ NĂNG
-  // =========================================================================
-  document.querySelectorAll("#skills-sub-nav .sub-tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll("#skills-sub-nav .sub-tab").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".skill-panel").forEach((p) => p.classList.remove("active"));
-      btn.classList.add("active");
-      activeSkill = btn.dataset.skill;
-      document.getElementById(`skill-${activeSkill}`).classList.add("active");
-      renderSidebar();
-    });
-  });
-
-  // 5.1 NGHE (Giống hệt ảnh 1)
-  function renderListening() {
-    const mode = STUDY_DATA.skills.listening.modes[listeningModeIdx];
-    const titleEl = document.getElementById("listening-title");
-    const stack = document.getElementById("listening-stack");
-    titleEl.textContent = mode.title;
-    stack.innerHTML = "";
-
-    if (mode.id === "choice") {
-      const noteCard = document.createElement("div");
-      noteCard.className = "wire-box stack-card note-card note hidden";
-
-      mode.options.forEach((opt, idx) => {
-        const card = document.createElement("div");
-        card.className = "wire-box stack-card clickable";
-        card.textContent = opt;
-        card.addEventListener("click", () => {
-          stack.querySelectorAll(".stack-card").forEach((c) => c.classList.remove("correct", "wrong"));
-          card.classList.add(idx === mode.correctIndex ? "correct" : "wrong");
-          noteCard.textContent = (idx === mode.correctIndex ? "Chính xác! " : "Chưa đúng! ") + mode.note;
-          noteCard.classList.remove("hidden");
-        });
-        stack.appendChild(card);
-      });
-      stack.appendChild(noteCard);
-    } else {
-      stack.innerHTML = `
-        <div class="wire-box stack-card" style="text-align:center;">
-          <p class="ko" style="font-size:22px; margin:0;">${mode.maskedSentence}</p>
-        </div>
-        <div class="wire-box stack-card pinterest-bar">
-          <input type="text" id="listen-fill-in" placeholder="Nhập từ nghe được..." />
-          <button type="button" id="listen-fill-btn" class="wire-box mini-btn">Kiểm tra</button>
-        </div>
-        <div id="listen-fill-note" class="wire-box stack-card note-card note hidden"></div>
-      `;
-      document.getElementById("listen-fill-btn").addEventListener("click", () => {
-        const val = document.getElementById("listen-fill-in").value.trim();
-        const noteEl = document.getElementById("listen-fill-note");
-        noteEl.textContent =
-          val === mode.answer ? `Chính xác! ${mode.note}` : `Đáp án đúng: "${mode.answer}". ${mode.note}`;
-        noteEl.classList.remove("hidden");
-      });
+    if (ch === " " && cells.length % cols === 0) {
+      continue;
     }
+    cells.push(ch);
   }
 
-  document.getElementById("btn-play-listening").addEventListener("click", () => {
-    speakKorean(STUDY_DATA.skills.listening.modes[listeningModeIdx].audioText, 0.9);
-  });
+  const totalCells = Math.max(cols * 6, Math.ceil(cells.length / cols) * cols);
+  let html = "";
+  for (let i = 0; i < totalCells; i++) {
+    const val = cells[i] || "";
+    const isSpace = val === " ";
+    html += `<div class="wongoji-cell ${isSpace ? "space-cell" : ""}">${isSpace ? "␣" : val}</div>`;
+  }
+  grid.innerHTML = html;
+}
 
-  // 5.2 NÓI (Shadowing + AI chấm chữa)
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+function checkWritingStyle() {
+  const text = document.getElementById("wongoji-input").value.trim();
+  const res = document.getElementById("writing-check-result");
+  const warnings = [];
 
-  function renderSpeaking() {
-    const stack = document.getElementById("speaking-stack");
-    stack.innerHTML = "";
-
-    if (speakingMode === "shadowing") {
-      STUDY_DATA.skills.speaking.shadowing.forEach((item, idx) => {
-        const card = document.createElement("div");
-        card.className = "wire-box stack-card";
-        card.innerHTML = `
-          <p class="ko" style="font-size:21px; margin:0 0 6px;">${item.ko}</p>
-          <p style="margin:0 0 8px;">${item.vi}</p>
-          <p class="note" style="margin:0 0 12px;">${item.note}</p>
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button type="button" id="sh-play-${idx}" class="wire-box mini-btn">🔊 Nghe mẫu</button>
-            <button type="button" id="sh-mic-${idx}" class="wire-box mini-btn">🎙️ Nhại lại</button>
-          </div>
-          <p id="sh-out-${idx}" class="note" style="margin:8px 0 0;"></p>
-        `;
-        stack.appendChild(card);
-
-        document.getElementById(`sh-play-${idx}`).addEventListener("click", () => speakKorean(item.ko, 0.9));
-        document.getElementById(`sh-mic-${idx}`).addEventListener("click", () => {
-          const out = document.getElementById(`sh-out-${idx}`);
-          if (!SpeechRecognition) {
-            out.textContent = "Trình duyệt chưa hỗ trợ Micro (Hãy dùng Chrome/Edge).";
-            return;
-          }
-          const rec = new SpeechRecognition();
-          rec.lang = "ko-KR";
-          out.textContent = "Đang nghe giọng bạn...";
-          rec.start();
-          rec.onresult = (e) => {
-            out.innerHTML = `Bạn đã nói: "<span class="ko">${e.results[0][0].transcript}</span>"`;
-          };
-        });
-      });
-    } else {
-      const p = STUDY_DATA.skills.speaking.aiPrompt;
-      stack.innerHTML = `
-        <div class="wire-box stack-card">
-          <strong>Cấu trúc:</strong> <span class="ko">${p.structure}</span>
-          <p style="margin:6px 0 0;">${p.situation}</p>
-        </div>
-        <div class="wire-box stack-card">
-          <textarea id="ai-sentence-in" rows="2" placeholder="Nhập hoặc bấm Micro để nói câu của bạn..."></textarea>
-          <div style="display:flex; gap:10px; margin-top:10px;">
-            <button type="button" id="ai-mic-btn" class="wire-box mini-btn">🎙️ Nói</button>
-            <button type="button" id="ai-check-btn" class="wire-box mini-btn">✨ AI Chấm chữa</button>
-          </div>
-        </div>
-        <div class="wire-box stack-card pinterest-bar">
-          <input type="password" id="gemini-key-in" placeholder="Gemini API Key (Tùy chọn để AI đối đáp tự do)..." />
-          <button type="button" id="save-key-btn" class="wire-box mini-btn">Lưu Key</button>
-        </div>
-        <div id="ai-feedback-card" class="wire-box stack-card note-card note hidden" style="white-space:pre-line;"></div>
-      `;
-
-      const saved = localStorage.getItem("gemini_api_key");
-      if (saved) document.getElementById("gemini-key-in").value = saved;
-
-      document.getElementById("save-key-btn").addEventListener("click", () => {
-        localStorage.setItem("gemini_api_key", document.getElementById("gemini-key-in").value.trim());
-        alert("Đã lưu API Key!");
-      });
-
-      document.getElementById("ai-mic-btn").addEventListener("click", () => {
-        if (!SpeechRecognition) return alert("Trình duyệt không hỗ trợ Micro.");
-        const rec = new SpeechRecognition();
-        rec.lang = "ko-KR";
-        rec.start();
-        rec.onresult = (e) => {
-          document.getElementById("ai-sentence-in").value = e.results[0][0].transcript;
-        };
-      });
-
-      document.getElementById("ai-check-btn").addEventListener("click", async () => {
-        const text = document.getElementById("ai-sentence-in").value.trim();
-        const fb = document.getElementById("ai-feedback-card");
-        if (!text) return;
-        fb.classList.remove("hidden");
-        fb.textContent = "Đang chấm chữa...";
-
-        const key = localStorage.getItem("gemini_api_key");
-        if (key) {
-          try {
-            const res = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  contents: [{
-                    parts: [{
-                      text: `Giáo viên tiếng Hàn nhận xét ngắn gọn câu "${text}" (yêu cầu dùng "${p.structure}") bằng tiếng Việt, sau đó đáp lại 1 câu tiếng Hàn tự nhiên.`
-                    }]
-                  }]
-                })
-              }
-            );
-            const data = await res.json();
-            const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (reply) {
-              fb.textContent = reply;
-              return;
-            }
-          } catch (e) {}
-        }
-
-        if (text.includes(p.requiredToken)) {
-          fb.textContent = `Chuẩn cấu trúc "${p.structure}"!\nAI phản hồi: 와, 정말요? 저도 한번 해 보고 싶어요!`;
-          speakKorean("와, 정말요? 저도 한번 해 보고 싶어요!", 0.95);
-        } else {
-          fb.textContent = `Lưu ý: Câu chưa có cụm "${p.requiredToken}".\nCâu mẫu: ${p.sampleAnswer}`;
-        }
-      });
-    }
+  if (/저는|저의|제가/.test(text)) {
+    warnings.push("Phát hiện từ văn nói '저는/제가' — trong văn viết nên đổi thành '나는/내가'.");
+  }
+  if (/아요|어요|해요|습니다/.test(text)) {
+    warnings.push("Phát hiện đuôi văn nói (-아요/어요/습니다) — hãy đổi sang đuôi văn viết (-는다/ㄴ다/다/이다).");
+  }
+  if (!/(반면에|때문에|뿐만 아니라|그러므로|따라서|지라도)/.test(text)) {
+    warnings.push("Bạn nên chèn thêm từ nối / cấu trúc hô ứng (ví dụ: ~는 반면에, ~기 때문이다, 그러므로, 비록 ~지라도) để bài viết đạt chuẩn trung cấp.");
   }
 
-  // 5.3 ĐỌC (Tích O / X)
-  function renderReading() {
-    const r = STUDY_DATA.skills.reading;
-    document.getElementById("reading-title").textContent = r.title;
-    document.getElementById("reading-passage").textContent = r.passage;
+  res.innerHTML = warnings.length === 0
+    ? `<div class="feedback-msg feedback-ok">🎉 Tuyệt vời! Bài viết sử dụng đúng văn phong viết (<span class="ko" lang="ko">문어체</span>) và cấu trúc hô ứng chuẩn!</div>`
+    : `<div class="feedback-msg feedback-warn">★ Gợi ý chỉnh sửa văn viết:<br/>• ${warnings.map(autoFontKo).join("<br/>• ")}</div>`;
+}
 
-    const stack = document.getElementById("reading-stack");
-    stack.innerHTML = "";
-    r.statements.forEach((st, idx) => {
-      const card = document.createElement("div");
-      card.className = "wire-box stack-card";
-      card.innerHTML = `
-        <p class="ko" style="margin:0 0 10px;">${st.text}</p>
-        <div style="display:flex; gap:10px;">
-          <button type="button" class="wire-box mini-btn" data-ans="true">O (Đúng)</button>
-          <button type="button" class="wire-box mini-btn" data-ans="false">X (Sai)</button>
-        </div>
-        <p id="read-note-${idx}" class="note hidden" style="margin:8px 0 0;"></p>
-      `;
-      stack.appendChild(card);
-
-      card.querySelectorAll("button").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const picked = btn.dataset.ans === "true";
-          const noteEl = document.getElementById(`read-note-${idx}`);
-          card.classList.remove("correct", "wrong");
-          card.classList.add(picked === st.isTrue ? "correct" : "wrong");
-          noteEl.textContent = (picked === st.isTrue ? "Chính xác! " : "Chưa đúng! ") + st.note;
-          noteEl.classList.remove("hidden");
-        });
-      });
-    });
-  }
-
-  // 5.4 VIẾT (Giấy ô vuông & Kiến thức văn viết)
-  function renderWriting() {
-    const stack = document.getElementById("writing-stack");
-    stack.innerHTML = "";
-
-    if (writingMode === "practice") {
-      stack.innerHTML = `
-        <div class="wire-box stack-card note-card note">
-          Lưu ý: Không dùng từ văn nói (저, 그리고, 하지만, đuôi -아요/어요) khi viết bài trên giấy ô vuông.
-        </div>
-        <div class="wire-box stack-card">
-          <textarea id="wongoji-in" rows="3" placeholder="Nhập đoạn văn tiếng Hàn để đổ vào giấy ô vuông..."></textarea>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-            <button type="button" id="btn-wongoji" class="wire-box mini-btn">Đổ vào ô vuông & Kiểm tra</button>
-            <span id="wongoji-count">0 ký tự</span>
-          </div>
-        </div>
-        <div id="wongoji-warn" class="wire-box stack-card note-card note hidden"></div>
-        <div class="wire-box stack-card">
-          <div id="wongoji-grid" class="wongoji-grid"></div>
-        </div>
-      `;
-
-      document.getElementById("btn-wongoji").addEventListener("click", () => {
-        const txt = document.getElementById("wongoji-in").value;
-        document.getElementById("wongoji-count").textContent = `${txt.length} ký tự`;
-
-        const warns = [];
-        if (/(저는|제가|저를|저도)/.test(txt)) warns.push("Dùng '나' thay cho '저'");
-        if (/(아요|어요|해요)/.test(txt)) warns.push("Chuyển đuôi '-아요/어요' sang '-는다/ㄴ다/다'");
-        if (txt.includes("그리고")) warns.push("Thay '그리고' bằng '또한/아울러'");
-        if (txt.includes("하지만")) warns.push("Thay '하지만' bằng '그러나/반면에'");
-
-        const warnEl = document.getElementById("wongoji-warn");
-        warnEl.textContent = warns.length ? "Lưu ý lỗi văn nói: " + warns.join(" | ") : "Tốt! Đúng văn phong viết.";
-        warnEl.classList.remove("hidden");
-
-        const chars = Array.from(txt);
-        const total = Math.max(80, Math.ceil(chars.length / 20) * 20);
-        const grid = document.getElementById("wongoji-grid");
-        grid.innerHTML = "";
-        for (let i = 0; i < total; i++) {
-          const cell = document.createElement("div");
-          cell.className = "wongoji-cell";
-          cell.textContent = chars[i] || "";
-          grid.appendChild(cell);
-        }
-      });
-    } else {
-      const wg = STUDY_DATA.skills.writing;
-      stack.innerHTML = `
-        <div class="wire-box stack-card">
-          <strong>1. Quy tắc viết giấy ô vuông (원고지)</strong>
-          <ul style="margin:8px 0 0; padding-left:20px;">${wg.wongojiRules.map((r) => `<li>${r}</li>`).join("")}</ul>
-        </div>
-        <div class="wire-box stack-card">
-          <strong>2. Cấu trúc hô ứng văn viết</strong>
-          <ul class="ko" style="margin:8px 0 0; padding-left:20px;">${wg.correlativeStructures.map((c) => `<li>${c}</li>`).join("")}</ul>
-        </div>
-        <div class="wire-box stack-card note-card">
-          <strong class="note">3. Từ vựng chỉ dùng trong văn viết (Lưu ý chuyển đổi)</strong>
-          <ul class="ko note" style="margin:8px 0 0; padding-left:20px;">${wg.writtenWords.map((w) => `<li>${w}</li>`).join("")}</ul>
-        </div>
-      `;
-    }
-  }
-
-  // Khởi chạy lần đầu
+/* --------------------------------------------------------------------------
+   5. KHỞI CHẠY ỨNG DỤNG
+   -------------------------------------------------------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+  setupSidebarToggle();
   renderSidebar();
-  renderVocab();
-  renderGrammar();
-  renderListening();
-  renderSpeaking();
-  renderReading();
-  renderWriting();
+  renderMainLesson();
 });
