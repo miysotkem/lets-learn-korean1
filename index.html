@@ -3,189 +3,138 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sổ Tay Học Tiếng Hàn</title>
-  <!-- Font dự phòng trường hợp chưa tải file font vào thư mục fonts/ -->
+  <title>Let's Learn Korean</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Mali:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="page-wrapper">
-    <!-- VỊ TRÍ CHÈN BANNER TIÊU ĐỀ VẼ TAY TỪ IBIS PAINT -->
-    <header class="site-header">
-      <div class="ibis-slot" data-slot="images/header-banner.png">
-        <img src="images/header-banner.png" alt="Banner tiêu đề" onerror="this.style.display='none'" />
-        <h1>Sổ Tay Học Tiếng Hàn</h1>
-        <p class="note">Ghi chú: Toàn bộ phần lưu ý quan trọng sẽ hiển thị màu hồng (#F98BC8).</p>
+  <div class="page-container">
+    <!-- ==================== 1. BANNER TIÊU ĐỀ ==================== -->
+    <header class="banner-wrap">
+      <div class="wire-box banner-box ibis-slot" data-slot="images/banner.png">
+        <img src="images/banner.png" alt="Let's Learn Korean" onerror="this.style.display='none'" />
+        <h1 class="site-title">✎ Let's Learn Korean</h1>
       </div>
-
-      <!-- MENU CHUYỂN 3 PHẦN CHÍNH -->
-      <nav class="main-nav" aria-label="Chuyên mục chính">
-        <button class="nav-btn active" data-tab="vocab">1. Từ vựng (Theo cụm)</button>
-        <button class="nav-btn" data-tab="grammar">2. Ngữ pháp</button>
-        <button class="nav-btn" data-tab="skills">3. Bốn kỹ năng (Nghe - Nói - Đọc - Viết)</button>
-      </nav>
     </header>
 
-    <main>
-      <!-- ==================== PHẦN 1: TỪ VỰNG ==================== -->
-      <section id="tab-vocab" class="tab-panel active">
-        <div class="section-header">
-          <h2>Phần 1: Từ vựng theo cụm (Flashcard)</h2>
-          <label>
-            Chọn chủ đề:
-            <select id="vocab-topic-select"></select>
-          </label>
-        </div>
+    <!-- ==================== 2. MENU 3 PHẦN CHÍNH ==================== -->
+    <nav class="main-nav" aria-label="Danh mục chính">
+      <button type="button" class="wire-box main-tab active" data-tab="vocab">Từ vựng</button>
+      <button type="button" class="wire-box main-tab" data-tab="grammar">Ngữ pháp</button>
+      <button type="button" class="wire-box main-tab" data-tab="skills">4 Kỹ năng</button>
+    </nav>
 
-        <!-- Khung Flashcard -->
-        <div class="flashcard-area ibis-slot" data-slot="images/flashcard-frame.png">
-          <div id="flashcard-box" class="flashcard-box">
-            <!-- Mặt trước -->
-            <div id="flashcard-front" class="card-face">
-              <div class="pinterest-frame">
-                <img id="vocab-img" src="" alt="Ảnh minh họa từ vựng" />
-                <p id="vocab-img-placeholder" class="note">[Khung dán ảnh minh họa Pinterest cho cụm từ]</p>
-              </div>
-              <p id="vocab-chunk" class="ko big-text"></p>
-              <div class="audio-controls">
-                <button type="button" id="btn-speak-normal">Nghe phát âm (1.0x)</button>
-                <button type="button" id="btn-speak-slow">Nghe chậm (0.7x)</button>
-                <button type="button" id="btn-flip-card">Lật thẻ xem nghĩa</button>
-              </div>
-            </div>
+    <!-- ==================== 3. KHUNG 2 CỘT: MENU CẠNH + NỘI DUNG ==================== -->
+    <div class="workspace">
+      <!-- THANH MENU Ở CẠNH TRÁI -->
+      <aside class="wire-box sidebar ibis-slot" data-slot="images/sidebar-frame.png">
+        <p id="sidebar-heading" class="sidebar-title">Chủ đề</p>
+        <div id="sidebar-menu" class="sidebar-list"></div>
+      </aside>
 
-            <!-- Mặt sau -->
-            <div id="flashcard-back" class="card-face hidden">
-              <p id="vocab-meaning" class="big-text"></p>
-              <p id="vocab-example-ko" class="ko"></p>
-              <p id="vocab-example-vi"></p>
-              <p id="vocab-note" class="note"></p>
-              <div class="audio-controls">
-                <button type="button" id="btn-speak-example">Nghe câu ví dụ</button>
-                <button type="button" id="btn-flip-back">Quay lại mặt trước</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="card-nav">
-            <button type="button" id="btn-prev-vocab">← Cụm trước</button>
-            <span id="vocab-counter">1 / 1</span>
-            <button type="button" id="btn-next-vocab">Cụm tiếp theo →</button>
-          </div>
-
-          <!-- Công cụ dán nhanh link ảnh Pinterest để xem thử -->
-          <div class="custom-pinterest-input">
-            <input type="url" id="pinterest-url-input" placeholder="Dán link ảnh Pinterest tại đây để đổi ảnh minh họa..." />
-            <button type="button" id="btn-apply-pinterest">Gắn ảnh</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== PHẦN 2: NGỮ PHÁP ==================== -->
-      <section id="tab-grammar" class="tab-panel">
-        <div class="section-header">
-          <h2>Phần 2: Ngữ pháp</h2>
-          <div class="sub-nav" id="grammar-category-nav">
-            <button type="button" class="sub-btn active" data-gcat="topic">Theo chủ đề</button>
-            <button type="button" class="sub-btn" data-gcat="speaking">Ngữ pháp giao tiếp</button>
-            <button type="button" class="sub-btn" data-gcat="writing">Ngữ pháp văn viết</button>
-            <button type="button" class="sub-btn" data-gcat="compare">So sánh ngữ pháp tương đồng</button>
-          </div>
-        </div>
-
-        <div id="grammar-topic-filter-wrap">
-          <label>
-            Chủ đề giáo trình:
-            <select id="grammar-topic-select"></select>
-          </label>
-        </div>
-
-        <!-- Danh sách kiến thức ngữ pháp -->
-        <div id="grammar-list" class="content-block"></div>
-
-        <!-- Khu vực luyện tập ngữ pháp: Đục lỗ & Dịch câu -->
-        <div class="practice-block ibis-slot" data-slot="images/grammar-practice-box.png">
-          <h3>Luyện tập ngữ pháp</h3>
+      <!-- KHU VỰC NỘI DUNG CHÍNH BÊN PHẢI -->
+      <main class="main-stage">
+        <!-- ==================== TAB 1: TỪ VỰNG (GIỐNG ẢNH 2) ==================== -->
+        <section id="tab-vocab" class="tab-panel active">
+          <!-- Hàng tab phụ -->
           <div class="sub-nav">
-            <button type="button" class="sub-btn active" data-gpractice="cloze">Bài tập đục lỗ</button>
-            <button type="button" class="sub-btn" data-gpractice="translate">Bài tập dịch câu (Việt → Hàn)</button>
+            <button type="button" class="wire-box sub-tab active" data-vmode="flashcard">Thẻ lật (Flashcard)</button>
+            <button type="button" class="wire-box sub-tab" data-vmode="quiz">Đố vui (Quiz)</button>
           </div>
-          <div id="grammar-practice-container"></div>
-        </div>
-      </section>
 
-      <!-- ==================== PHẦN 3: BỐN KỸ NĂNG ==================== -->
-      <section id="tab-skills" class="tab-panel">
-        <div class="section-header">
-          <h2>Phần 3: Bốn kỹ năng</h2>
+          <!-- Chế độ Flashcard -->
+          <div id="vocab-flashcard-view">
+            <p id="vocab-counter" class="counter-text">1 / 2</p>
+
+            <!-- Thẻ Flashcard lớn ở giữa -->
+            <div class="wire-box big-card ibis-slot" data-slot="images/flashcard-frame.png">
+              <!-- Mặt trước -->
+              <div id="card-front">
+                <div class="pinterest-slot">
+                  <img id="vocab-img" src="" alt="Minh họa từ vựng" class="hidden" />
+                  <span id="vocab-img-placeholder" class="note">[Khung dán ảnh Pinterest]</span>
+                </div>
+                <p id="vocab-chunk" class="ko big-word"></p>
+              </div>
+
+              <!-- Mặt sau (không bị lật ngược chữ) -->
+              <div id="card-back" class="hidden">
+                <p id="vocab-meaning" class="big-word"></p>
+                <div class="wire-box inner-box">
+                  <p id="vocab-example-ko" class="ko" style="margin:0 0 6px; font-size:20px;"></p>
+                  <p id="vocab-example-vi" style="margin:0 0 10px;"></p>
+                  <button type="button" id="btn-speak-example" class="wire-box mini-btn">🔊 Nghe câu ví dụ</button>
+                </div>
+                <p id="vocab-note" class="note" style="margin:12px 0 0;"></p>
+              </div>
+            </div>
+
+            <!-- Hàng 4 nút điều khiển dưới thẻ giống hệt ảnh 2: [ ◀ ] [ 🔊 ] [ ↻ Lật thẻ ] [ ▶ ] -->
+            <div class="flashcard-controls">
+              <button type="button" id="btn-prev-vocab" class="wire-box ctrl-btn" title="Trước">◀</button>
+              <button type="button" id="btn-speak-vocab" class="wire-box ctrl-btn" title="Phát âm">🔊</button>
+              <button type="button" id="btn-flip-vocab" class="wire-box ctrl-btn flip-btn">↻ Lật thẻ</button>
+              <button type="button" id="btn-next-vocab" class="wire-box ctrl-btn" title="Tiếp">▶</button>
+            </div>
+
+            <!-- Dán link ảnh Pinterest -->
+            <div class="pinterest-bar">
+              <input type="url" id="pinterest-url-input" placeholder="Dán link ảnh Pinterest tại đây..." />
+              <button type="button" id="btn-apply-pinterest" class="wire-box mini-btn">Gắn ảnh</button>
+            </div>
+          </div>
+
+          <!-- Chế độ Quiz từ vựng -->
+          <div id="vocab-quiz-view" class="hidden"></div>
+        </section>
+
+        <!-- ==================== TAB 2: NGỮ PHÁP (GIỐNG ẢNH 3) ==================== -->
+        <section id="tab-grammar" class="tab-panel">
+          <div id="grammar-stack" class="stack-list"></div>
+        </section>
+
+        <!-- ==================== TAB 3: 4 KỸ NĂNG (GIỐNG ẢNH 1) ==================== -->
+        <section id="tab-skills" class="tab-panel">
+          <!-- Hàng 4 nút Nghe | Nói | Đọc | Viết -->
           <div class="sub-nav" id="skills-sub-nav">
-            <button type="button" class="sub-btn active" data-skill="listening">Nghe (듣기)</button>
-            <button type="button" class="sub-btn" data-skill="speaking">Nói (말하기)</button>
-            <button type="button" class="sub-btn" data-skill="reading">Đọc (읽기)</button>
-            <button type="button" class="sub-btn" data-skill="writing">Viết (쓰기)</button>
-          </div>
-        </div>
-
-        <!-- 3.1 KỸ NĂNG NGHE -->
-        <div id="skill-listening" class="skill-panel active">
-          <h3>Luyện Nghe (듣기)</h3>
-          <div id="listening-container"></div>
-        </div>
-
-        <!-- 3.2 KỸ NĂNG NÓI -->
-        <div id="skill-speaking" class="skill-panel">
-          <h3>Luyện Nói (말하기)</h3>
-
-          <!-- Phương pháp 1: Shadowing -->
-          <div class="content-block ibis-slot" data-slot="images/shadowing-box.png">
-            <h4>1. Luyện nói Shadowing (Nghe và nhại lại theo ngữ điệu)</h4>
-            <div id="shadowing-container"></div>
+            <button type="button" class="wire-box sub-tab active" data-skill="listening">Nghe</button>
+            <button type="button" class="wire-box sub-tab" data-skill="speaking">Nói</button>
+            <button type="button" class="wire-box sub-tab" data-skill="reading">Đọc</button>
+            <button type="button" class="wire-box sub-tab" data-skill="writing">Viết</button>
           </div>
 
-          <!-- Phương pháp 2: Đặt câu theo cấu trúc + AI chấm chữa & đối đáp -->
-          <div class="content-block ibis-slot" data-slot="images/ai-tutor-box.png">
-            <h4>2. Tự đặt câu theo cấu trúc & Luyện nói cùng AI chấm chữa</h4>
-            <div class="ai-config">
-              <details>
-                <summary>Cài đặt Gemini API Key (Tùy chọn - để AI hội thoại & chấm chữa nâng cao)</summary>
-                <p class="note">Nếu chưa nhập API Key, hệ thống vẫn tự động kiểm tra cấu trúc ngữ pháp và gợi ý sửa lỗi cơ bản.</p>
-                <input type="password" id="gemini-api-key" placeholder="Dán Gemini API Key (AIza...) vào đây..." />
-                <button type="button" id="btn-save-api-key">Lưu Key</button>
-              </details>
+          <!-- 3.1 NGHE -->
+          <div id="skill-listening" class="skill-panel active">
+            <div class="wire-box prompt-box ibis-slot" data-slot="images/listening-prompt.png">
+              <h2 id="listening-title" class="prompt-title">Luyện Nghe: Nghe câu và chọn nghĩa đúng</h2>
+              <button type="button" id="btn-play-listening" class="wire-box mini-btn">🔊 Bấm để nghe đoạn hội thoại</button>
             </div>
-            <div id="speaking-ai-container"></div>
+            <div id="listening-stack" class="stack-list"></div>
           </div>
-        </div>
 
-        <!-- 3.3 KỸ NĂNG ĐỌC -->
-        <div id="skill-reading" class="skill-panel">
-          <h3>Luyện Đọc - Tích Đúng / Sai (O / X)</h3>
-          <div id="reading-container"></div>
-        </div>
+          <!-- 3.2 NÓI -->
+          <div id="skill-speaking" class="skill-panel">
+            <div id="speaking-stack" class="stack-list"></div>
+          </div>
 
-        <!-- 3.4 KỸ NĂNG VIẾT -->
-        <div id="skill-writing" class="skill-panel">
-          <h3>Luyện Viết (쓰기)</h3>
-          <!-- Kiến thức tổng hợp văn viết -->
-          <div id="writing-guide-container" class="content-block"></div>
-
-          <!-- Khung luyện viết giấy ô vuông -->
-          <div class="content-block ibis-slot" data-slot="images/wongoji-box.png">
-            <h4>Thực hành viết trên giấy ô vuông (원고지)</h4>
-            <p class="note">Lưu ý: Không dùng từ văn nói (나, 너, 그리고, đuôi -아요/어요) trong bài viết.</p>
-            <textarea id="wongoji-input" rows="4" placeholder="Nhập đoạn văn tiếng Hàn của bạn tại đây để đổ vào ô vuông và kiểm tra lỗi văn viết..."></textarea>
-            <div class="audio-controls">
-              <button type="button" id="btn-render-wongoji">Đổ chữ vào giấy ô vuông & Kiểm tra lỗi</button>
-              <span id="wongoji-char-count">Số ký tự: 0</span>
+          <!-- 3.3 ĐỌC -->
+          <div id="skill-reading" class="skill-panel">
+            <div class="wire-box prompt-box ibis-slot" data-slot="images/reading-prompt.png">
+              <h2 id="reading-title" class="prompt-title"></h2>
+              <p id="reading-passage" class="ko" style="text-align:left; margin:0;"></p>
             </div>
-            <div id="wongoji-feedback" class="note"></div>
-            <div id="wongoji-grid" class="wongoji-grid"></div>
+            <div id="reading-stack" class="stack-list"></div>
           </div>
-        </div>
-      </section>
-    </main>
+
+          <!-- 3.4 VIẾT -->
+          <div id="skill-writing" class="skill-panel">
+            <div id="writing-stack" class="stack-list"></div>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
 
   <script src="data.js"></script>
