@@ -564,12 +564,14 @@ const KOREAN_CURRICULUM = [
   }
 ];
 
-/* KIẾN THỨC CỐ ĐỊNH CHO KỸ NĂNG VIẾT (GIẤY Ô VUÔNG + HÔ ỨNG + VĂN VIẾT) */
+/* ==========================================================================
+   KIẾN THỨC CHUYÊN SÂU KỸ NĂNG VIẾT (QUYỂN 2 - QUYỂN 4 & CHUẨN WONGOJI)
+   ========================================================================== */
 const WRITING_HANDBOOK = {
   wongojiRules: [
     {
       title: "1. Quy tắc lùi đầu dòng (들여쓰기)",
-      content: "Khi bắt đầu bài viết hoặc xuống dòng sang đoạn văn mới, BẮT BUỘC bỏ trống ô đầu tiên (1 ô vuông) rồi mới viết từ ô thứ 2.",
+      content: "Khi bắt đầu bài viết hoặc xuống dòng mở đoạn văn mới, BẮT BUỘC bỏ trống ô đầu tiên (1 ô vuông) rồi mới viết từ ô thứ 2.",
       important: true
     },
     {
@@ -578,53 +580,104 @@ const WRITING_HANDBOOK = {
       important: true
     },
     {
-      title: "3. Dấu chấm (.) và Dấu phẩy (,)",
-      content: "Viết vào góc dưới bên trái của 1 ô vuông riêng. Sau dấu chấm/phẩy KHÔNG bỏ trống thêm ô cách nào (trừ khi kết thúc đoạn văn).",
+      title: "3. Quy tắc dấu chấm (.) và dấu phẩy (,)",
+      content: "Viết vào góc dưới bên trái của 1 ô vuông riêng. Sau dấu chấm (.) và dấu phẩy (,) KHÔNG bỏ trống ô cách nào. Đặc biệt: dấu câu KHÔNG BAO GIỜ đứng ở ô đầu tiên của dòng mới (nếu hết dòng thì viết chung vào ô cuối cùng với chữ trước đó).",
       important: true
     },
     {
       title: "4. Dấu chấm hỏi (?) và Dấu chấm than (!)",
-      content: "Viết ở chính giữa 1 ô vuông riêng, và BẮT BUỘC bỏ trống 1 ô bên cạnh trước khi viết tiếp. Không đặt dấu câu ở ô đầu tiên của dòng mới (nếu hết dòng thì viết chung vào ô cuối cùng với chữ trước đó).",
-      important: true
+      content: "Viết ở chính giữa 1 ô vuông riêng, và BẮT BUỘC bỏ trống 1 ô bên cạnh trước khi viết tiếp (trừ khi nằm ở cuối dòng).",
+      important: false
     },
     {
       title: "5. Cách viết số và chữ cái Latin",
-      content: "Số có 1 chữ số viết 1 ô. Số có 2 chữ số (ví dụ: 20, 15) hoặc chữ cái tiếng Anh viết ghép 2 ký tự vào chung 1 ô vuông.",
-      important: true
+      content: "Số có 1 chữ số viết 1 ô. Số có 2 chữ số (ví dụ: 20, 80) hoặc 2 chữ cái Latin viết ghép vào chung 1 ô vuông.",
+      important: false
     }
   ],
-  correlativeStructures: [
+
+  correlativeGroups: [
     {
-      pattern: "비록 ~(으)ㄹ지라도 ~ (아/어)도",
-      meaning: "Dù cho... đi chăng nữa thì vẫn...",
-      exampleKo: "비록 한국어 공부가 힘들지라도 포기하지 않을 것이다.",
-      exampleVi: "Dù việc học tiếng Hàn có vất vả đi chăng nữa thì tôi cũng sẽ không bỏ cuộc."
+      groupName: "Nhóm 1: Cấu trúc hô ứng Nguyên nhân – Lý do",
+      items: [
+        {
+          pattern: "왜냐하면 ~기 때문이다",
+          meaning: "Sở dĩ như vậy là bởi vì...",
+          exampleKo: "나는 매일 아침 운동을 한다. 왜냐하면 건강을 유지할 수 있기 때문이다.",
+          exampleVi: "Tôi tập thể dục mỗi sáng. Bởi vì có thể duy trì được sức khỏe."
+        },
+        {
+          pattern: "~는 바람에",
+          meaning: "Vì / Do... (Nguyên nhân bất ngờ dẫn đến kết quả tiêu cực)",
+          exampleKo: "갑자기 비가 내리는 바람에 야외 행사가 취소되었다.",
+          exampleVi: "Vì trời đột nhiên đổ mưa nên sự kiện ngoài trời đã bị hủy."
+        },
+        {
+          pattern: "N(으)로 인해(서)",
+          meaning: "Do / Bởi vì N (Dùng nhiều trong văn viết trang trọng, báo chí)",
+          exampleKo: "환경 오염으로 인해 이상 기후 현상이 심각해지고 있다.",
+          exampleVi: "Do ô nhiễm môi trường nên hiện tượng khí hậu bất thường đang trở nên nghiêm trọng."
+        }
+      ]
     },
     {
-      pattern: "왜냐하면 ~기 때문이다",
-      meaning: "Sở dĩ như vậy là bởi vì...",
-      exampleKo: "나는 아침을 꼭 먹는다. 왜냐하면 건강에 좋기 때문이다.",
-      exampleVi: "Tôi nhất định ăn sáng. Bởi vì điều đó tốt cho sức khỏe."
+      groupName: "Nhóm 2: Cấu trúc hô ứng Nhượng bộ – Tương phản",
+      items: [
+        {
+          pattern: "비록 ~(으)ㄹ지라도 ~ (아/어)도",
+          meaning: "Dù cho... đi chăng nữa thì vẫn...",
+          exampleKo: "비록 시작은 미약할지라도 끝까지 노력하면 좋은 결과를 얻을 수 있다.",
+          exampleVi: "Dù khởi đầu có nhỏ bé đi chăng nữa thì nếu nỗ lực đến cùng vẫn có thể đạt được kết quả tốt."
+        },
+        {
+          pattern: "~는 반면에",
+          meaning: "Trong khi... / Trái lại thì...",
+          exampleKo: "인터넷 쇼핑은 편리한 반면에 충동구매를 하기 쉽다는 단점이 있다.",
+          exampleVi: "Mua sắm trực tuyến tiện lợi trong khi lại có nhược điểm là dễ mua sắm bốc đồng."
+        },
+        {
+          pattern: "~(으)ㄴ/는 데도 불구하고",
+          meaning: "Mặc dù... nhưng vẫn...",
+          exampleKo: "물가가 계속 오르는 데도 불구하고 소비자들의 지출은 줄지 않았다.",
+          exampleVi: "Mặc dù vật giá liên tục tăng nhưng chi tiêu của người tiêu dùng vẫn không giảm."
+        }
+      ]
     },
     {
-      pattern: "~뿐만 아니라 ~도",
-      meaning: "Không chỉ... mà còn...",
-      exampleKo: "그는 노래를 잘할 뿐만 아니라 춤도 잘 춘다.",
-      exampleVi: "Anh ấy không chỉ hát hay mà còn nhảy đẹp."
-    },
-    {
-      pattern: "~는 반면에",
-      meaning: "Trong khi... / Trái lại thì...",
-      exampleKo: "형은 성격이 활발한 반면에 동생은 조용하다.",
-      exampleVi: "Anh trai tính cách hoạt bát trong khi em trai lại trầm tính."
+      groupName: "Nhóm 3: Cấu trúc hô ứng Bổ sung – Mục đích – Quá trình",
+      items: [
+        {
+          pattern: "~뿐만 아니라 ~도",
+          meaning: "Không chỉ... mà còn...",
+          exampleKo: "독서는 지식을 넓혀 줄 뿐만 아니라 사고력도 길러 준다.",
+          exampleVi: "Đọc sách không chỉ mở rộng kiến thức mà còn rèn luyện cả tư duy."
+        },
+        {
+          pattern: "~기 위해서는 ~어야 한다 / 필요하다",
+          meaning: "Để làm được... thì cần phải...",
+          exampleKo: "목표를 이루기 위해서는 구체적인 계획을 세우는 것이 필요하다.",
+          exampleVi: "Để đạt được mục tiêu thì việc lập kế hoạch cụ thể là cần thiết."
+        },
+        {
+          pattern: "~다 보면",
+          meaning: "Nếu cứ làm gì mãi thì sẽ (nhận ra kết quả)...",
+          exampleKo: "꾸준히 일기를 쓰다 보면 자연스럽게 작문 실력이 향상된다.",
+          exampleVi: "Nếu cứ viết nhật ký đều đặn thì năng lực viết văn sẽ tự nhiên được cải thiện."
+        }
+      ]
     }
   ],
+
   writtenVsSpoken: [
-    { spoken: "저는 / 나는 (Tôi)", written: "나는 (Luôn dùng '나', KHÔNG dùng '저' trong văn nghị luận/miêu tả chung)" },
-    { spoken: "우리 나라 (Đất nước chúng ta)", written: "우리나라 (Viết liền không cách)" },
+    { spoken: "저는 / 나는 (Tôi)", written: "나는 (Chỉ dùng '나', TUYỆT ĐỐI không dùng '저' trong văn viết)" },
+    { spoken: "우리 나라 (Đất nước chúng ta)", written: "우리나라 (Viết liền không dấu cách)" },
     { spoken: "-아요 / -어요 / -습니다 (Đuôi câu nói)", written: "-는다 / -ㄴ다 (Động từ), -다 (Tính từ), -이다 (Danh từ)" },
-    { spoken: "그래서 (Vì vậy - văn nói)", written: "따라서 / 그러므로 (Do đó, vì thế)" },
+    { spoken: "-았어요 / -었어요 (Quá khứ văn nói)", written: "-았다 / -었다 / -였다 (Quá khứ văn viết)" },
+    { spoken: "그래서 (Vì vậy)", written: "따라서 / 그러므로 (Do đó, vì thế)" },
     { spoken: "그런데 / 하지만 (Nhưng)", written: "그러나 / 반면에 (Tuy nhiên / Ngược lại)" },
-    { spoken: "진짜 / 너무 (Rất, quá - khẩu ngữ)", written: "매우 / 대단히 / 몹시 (Rất, vô cùng - trang trọng)" }
+    { spoken: "그리고 (Và)", written: "또한 / 게다가 / 아울러 (Ngoài ra, hơn nữa)" },
+    { spoken: "진짜 / 너무 / 아주 (Rất, quá)", written: "매우 / 대단히 / 상당히 (Rất, đáng kể)" },
+    { spoken: "많이 (Nhiều)", written: "다수 / 크게 / 널리 (Số đông, rộng rãi)" },
+    { spoken: "생각하다 (Nghĩ là)", written: "여기다 / 판단하다 / 간주하다 (Cho rằng, nhận định)" }
   ]
 };
