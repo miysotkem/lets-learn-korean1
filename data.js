@@ -580,7 +580,7 @@ const WRITING_HANDBOOK = {
     {
       title: "3. Dấu chấm (.) và Dấu phẩy (,)",
       content: "Viết vào góc dưới bên trái của 1 ô vuông riêng. Sau dấu chấm/phẩy KHÔNG bỏ trống thêm ô cách nào (trừ khi kết thúc đoạn văn).",
-      important: false
+      important: true
     },
     {
       title: "4. Dấu chấm hỏi (?) và Dấu chấm than (!)",
@@ -590,7 +590,7 @@ const WRITING_HANDBOOK = {
     {
       title: "5. Cách viết số và chữ cái Latin",
       content: "Số có 1 chữ số viết 1 ô. Số có 2 chữ số (ví dụ: 20, 15) hoặc chữ cái tiếng Anh viết ghép 2 ký tự vào chung 1 ô vuông.",
-      important: false
+      important: true
     }
   ],
   correlativeStructures: [
