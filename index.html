@@ -3,137 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Let's Learn Korean</title>
+  <title>Let’s Learn Korean - 한국어 공부하자</title>
+  <!-- Google Fonts: Mali (Tiếng Việt) & Gaegu (Tiếng Hàn) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Mali:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Mali:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="page-container">
-    <!-- ==================== 1. BANNER TIÊU ĐỀ ==================== -->
-    <header class="banner-wrap">
-      <div class="wire-box banner-box ibis-slot" data-slot="images/banner.png">
-        <img src="images/banner.png" alt="Let's Learn Korean" onerror="this.style.display='none'" />
-        <h1 class="site-title">✎ Let's Learn Korean</h1>
+  <!-- Layer hiệu ứng click sinh động -->
+  <div id="click-fx-layer" aria-hidden="true"></div>
+
+  <div class="app-layout">
+    <!-- THANH ĐIỀU HƯỚNG THỤT RA THỤT VÀO -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <span class="ko brand-ko" lang="ko">한국어 노트</span>
+          <span class="brand-vi">Tổng Hợp Quyển 2 - 4</span>
+        </div>
+        <button id="sidebar-close-btn" class="icon-btn pop-click" title="Thu gọn thanh điều hướng">
+          ✕
+        </button>
       </div>
-    </header>
 
-    <!-- ==================== 2. MENU 3 PHẦN CHÍNH ==================== -->
-    <nav class="main-nav" aria-label="Danh mục chính">
-      <button type="button" class="wire-box main-tab active" data-tab="vocab">Từ vựng</button>
-      <button type="button" class="wire-box main-tab" data-tab="grammar">Ngữ pháp</button>
-      <button type="button" class="wire-box main-tab" data-tab="skills">4 Kỹ năng</button>
-    </nav>
+      <div class="sidebar-scroll">
+        <p class="sidebar-hint">Chọn chủ đề (Quyển 2 → Quyển 4):</p>
+        <nav id="topic-nav" class="topic-nav" aria-label="Danh sách bài học"></nav>
+      </div>
 
-    <!-- ==================== 3. KHUNG 2 CỘT: MENU CẠNH + NỘI DUNG ==================== -->
-    <div class="workspace">
-      <!-- THANH MENU Ở CẠNH TRÁI -->
-      <aside class="wire-box sidebar ibis-slot" data-slot="images/sidebar-frame.png">
-        <p id="sidebar-heading" class="sidebar-title">Chủ đề</p>
-        <div id="sidebar-menu" class="sidebar-list"></div>
-      </aside>
+      <div class="sidebar-footer">
+        <div class="color-legend">
+          <span class="legend-item"><i class="dot dot-blue"></i> Kiến thức chính</span>
+          <span class="legend-item"><i class="dot dot-pink"></i> Phần cần lưu ý</span>
+        </div>
+      </div>
+    </aside>
 
-      <!-- KHU VỰC NỘI DUNG CHÍNH BÊN PHẢI -->
-      <main class="main-stage">
-        <!-- ==================== TAB 1: TỪ VỰNG (GIỐNG ẢNH 2) ==================== -->
-        <section id="tab-vocab" class="tab-panel active">
-          <!-- Hàng tab phụ -->
-          <div class="sub-nav">
-            <button type="button" class="wire-box sub-tab active" data-vmode="flashcard">Thẻ lật (Flashcard)</button>
-            <button type="button" class="wire-box sub-tab" data-vmode="quiz">Đố vui (Quiz)</button>
-          </div>
+    <!-- MÀN HÌNH CHÍNH: CHỈ GỒM BANNER VÀ BÀI HỌC -->
+    <div id="main-wrapper" class="main-wrapper">
+      <button id="sidebar-toggle-btn" class="sidebar-toggle-btn pop-click" title="Đóng / Mở danh mục bài học">
+        <img src="images/icon-menu.png" alt="Menu" class="custom-img-icon"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';" />
+        <span class="fallback-menu-icon" style="display:none;">☰</span>
+        <span class="toggle-label">Danh mục</span>
+      </button>
 
-          <!-- Chế độ Flashcard -->
-          <div id="vocab-flashcard-view">
-            <p id="vocab-counter" class="counter-text">1 / 2</p>
+      <!-- BANNER CHÍNH -->
+      <header class="main-banner">
+        <img src="images/banner-bg.png" alt="Banner IbisPaint X" class="banner-custom-art" onerror="this.style.display='none';" />
+        <div class="banner-content">
+          <div class="banner-badge">Giáo trình Tiếng Hàn Tổng Hợp • Quyển 2 – 4</div>
+          <h1 class="banner-title">
+            Let’s Learn Korean - <span class="ko" lang="ko">한국어 공부하자</span>
+          </h1>
+          <p id="current-breadcrumb" class="banner-subtitle"></p>
+        </div>
+        <img src="images/doodle-star.png" alt="Sticker" class="banner-sticker" onerror="this.style.display='none';" />
+      </header>
 
-            <!-- Thẻ Flashcard lớn ở giữa -->
-            <div class="wire-box big-card ibis-slot" data-slot="images/flashcard-frame.png">
-              <!-- Mặt trước -->
-              <div id="card-front">
-                <div class="pinterest-slot">
-                  <img id="vocab-img" src="" alt="Minh họa từ vựng" class="hidden" />
-                  <span id="vocab-img-placeholder" class="note">[Khung dán ảnh Pinterest]</span>
-                </div>
-                <p id="vocab-chunk" class="ko big-word"></p>
-              </div>
-
-              <!-- Mặt sau (không bị lật ngược chữ) -->
-              <div id="card-back" class="hidden">
-                <p id="vocab-meaning" class="big-word"></p>
-                <div class="wire-box inner-box">
-                  <p id="vocab-example-ko" class="ko" style="margin:0 0 6px; font-size:20px;"></p>
-                  <p id="vocab-example-vi" style="margin:0 0 10px;"></p>
-                  <button type="button" id="btn-speak-example" class="wire-box mini-btn">🔊 Nghe câu ví dụ</button>
-                </div>
-                <p id="vocab-note" class="note" style="margin:12px 0 0;"></p>
-              </div>
-            </div>
-
-            <!-- Hàng 4 nút điều khiển dưới thẻ giống hệt ảnh 2: [ ◀ ] [ 🔊 ] [ ↻ Lật thẻ ] [ ▶ ] -->
-            <div class="flashcard-controls">
-              <button type="button" id="btn-prev-vocab" class="wire-box ctrl-btn" title="Trước">◀</button>
-              <button type="button" id="btn-speak-vocab" class="wire-box ctrl-btn" title="Phát âm">🔊</button>
-              <button type="button" id="btn-flip-vocab" class="wire-box ctrl-btn flip-btn">↻ Lật thẻ</button>
-              <button type="button" id="btn-next-vocab" class="wire-box ctrl-btn" title="Tiếp">▶</button>
-            </div>
-
-            <!-- Dán link ảnh Pinterest -->
-            <div class="pinterest-bar">
-              <input type="url" id="pinterest-url-input" placeholder="Dán link ảnh Pinterest tại đây..." />
-              <button type="button" id="btn-apply-pinterest" class="wire-box mini-btn">Gắn ảnh</button>
-            </div>
-          </div>
-
-          <!-- Chế độ Quiz từ vựng -->
-          <div id="vocab-quiz-view" class="hidden"></div>
-        </section>
-
-        <!-- ==================== TAB 2: NGỮ PHÁP (GIỐNG ẢNH 3) ==================== -->
-        <section id="tab-grammar" class="tab-panel">
-          <div id="grammar-stack" class="stack-list"></div>
-        </section>
-
-        <!-- ==================== TAB 3: 4 KỸ NĂNG (GIỐNG ẢNH 1) ==================== -->
-        <section id="tab-skills" class="tab-panel">
-          <!-- Hàng 4 nút Nghe | Nói | Đọc | Viết -->
-          <div class="sub-nav" id="skills-sub-nav">
-            <button type="button" class="wire-box sub-tab active" data-skill="listening">Nghe</button>
-            <button type="button" class="wire-box sub-tab" data-skill="speaking">Nói</button>
-            <button type="button" class="wire-box sub-tab" data-skill="reading">Đọc</button>
-            <button type="button" class="wire-box sub-tab" data-skill="writing">Viết</button>
-          </div>
-
-          <!-- 3.1 NGHE -->
-          <div id="skill-listening" class="skill-panel active">
-            <div class="wire-box prompt-box ibis-slot" data-slot="images/listening-prompt.png">
-              <h2 id="listening-title" class="prompt-title">Luyện Nghe: Nghe câu và chọn nghĩa đúng</h2>
-              <button type="button" id="btn-play-listening" class="wire-box mini-btn">🔊 Bấm để nghe đoạn hội thoại</button>
-            </div>
-            <div id="listening-stack" class="stack-list"></div>
-          </div>
-
-          <!-- 3.2 NÓI -->
-          <div id="skill-speaking" class="skill-panel">
-            <div id="speaking-stack" class="stack-list"></div>
-          </div>
-
-          <!-- 3.3 ĐỌC -->
-          <div id="skill-reading" class="skill-panel">
-            <div class="wire-box prompt-box ibis-slot" data-slot="images/reading-prompt.png">
-              <h2 id="reading-title" class="prompt-title"></h2>
-              <p id="reading-passage" class="ko" style="text-align:left; margin:0;"></p>
-            </div>
-            <div id="reading-stack" class="stack-list"></div>
-          </div>
-
-          <!-- 3.4 VIẾT -->
-          <div id="skill-writing" class="skill-panel">
-            <div id="writing-stack" class="stack-list"></div>
-          </div>
-        </section>
-      </main>
+      <!-- KHU VỰC NỘI DUNG BÀI HỌC -->
+      <main id="lesson-container" class="lesson-container"></main>
     </div>
   </div>
 
