@@ -1,8 +1,6 @@
 /* ==========================================================================
-   1. KHAI BÁO FONT CHỮ (TÁCH BẢNG MÃ UNICODE ĐỂ KHÔNG BAO GIỜ LỖI DẤU)
+   1. FONT CHỮ: CHIICORY (TIẾNG VIỆT) & HELLOFONT ID SHANLANTI KR (TIẾNG HÀN)
    ========================================================================== */
-
-/* Font tiếng Việt: Chiicory */
 @font-face {
   font-family: 'Chiicory';
   src: url('fonts/Chiicory.woff2') format('woff2'),
@@ -13,7 +11,6 @@
   font-display: swap;
 }
 
-/* Font tiếng Hàn: HelloFont ID ShanLanTi KR (Chỉ áp dụng cho ký tự Hangul) */
 @font-face {
   font-family: 'HelloFont ID ShanLanTi KR';
   src: url('fonts/HelloFont-ID-ShanLanTi-KR.woff2') format('woff2'),
@@ -22,17 +19,16 @@
   font-weight: normal;
   font-style: normal;
   font-display: swap;
-  /* Bảng mã tiếng Hàn Hangul: tự động bắt chữ Hàn mà không đè lên dấu tiếng Việt */
   unicode-range: U+AC00-D7AF, U+1100-11FF, U+3130-318F, U+A960-A97F, U+D7B0-D7FF;
 }
 
 /* ==========================================================================
-   2. BIẾN MÀU SẮC & THIẾT LẬP CHUNG
+   2. MÀU SẮC CHUẨN (#387CD3 BÌNH THƯỜNG & #F98BC8 LƯU Ý)
    ========================================================================== */
 :root {
-  --color-normal: #387CD3; /* Màu chữ bình thường */
-  --color-note: #F98BC8;   /* Màu chữ cho các phần cần lưu ý */
-  --bg-page: #FFFFFF;      /* Nền trắng trống để bạn tự chèn ảnh vẽ tay */
+  --color-normal: #387CD3;
+  --color-note: #F98BC8;
+  --bg-page: #FFFFFF;
 }
 
 * {
@@ -41,191 +37,387 @@
 
 body {
   margin: 0;
-  padding: 20px;
+  padding: 20px 16px 60px;
   background-color: var(--bg-page);
   color: var(--color-normal);
-  /* Ưu tiên font Hàn cho ký tự Hangul, sau đó tới Chiicory cho tiếng Việt */
   font-family: 'HelloFont ID ShanLanTi KR', 'Chiicory', 'Mali', 'Gaegu', sans-serif;
   font-size: 18px;
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
-/* Class riêng cho đoạn văn bản thuần tiếng Hàn nếu cần chỉnh cỡ chữ */
 .ko {
   font-family: 'HelloFont ID ShanLanTi KR', 'Gaegu', sans-serif;
   color: var(--color-normal);
 }
 
-/* Class riêng cho mọi phần lưu ý, ghi chú quan trọng, lỗi sai */
 .note {
   color: var(--color-note);
   font-weight: 600;
-}
-
-/* ==========================================================================
-   3. KHUNG WIREFRAME TRỐNG (ĐÁNH DẤU VỊ TRÍ CHÈN HÌNH VẼ IBIS PAINT)
-   ========================================================================== */
-.page-wrapper {
-  max-width: 960px;
-  margin: 0 auto;
-}
-
-/* Các khối có class .ibis-slot là nơi bạn có thể thay bằng hình vẽ tay */
-.ibis-slot {
-  position: relative;
-  border: 1px dashed rgba(56, 124, 211, 0.35);
-  padding: 16px;
-  margin-bottom: 20px;
-  background: transparent;
-}
-
-.ibis-slot::after {
-  content: "Vị trí ảnh vẽ tay: " attr(data-slot);
-  display: block;
-  font-size: 12px;
-  color: rgba(56, 124, 211, 0.5);
-  margin-top: 8px;
-  text-align: right;
-}
-
-.ibis-slot > img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* ==========================================================================
-   4. BỐ CỤC NỘI DUNG TỐI GIẢN
-   ========================================================================== */
-h1, h2, h3, h4 {
-  color: var(--color-normal);
-  margin-top: 0;
-}
-
-button, select, input, textarea {
-  font-family: 'HelloFont ID ShanLanTi KR', 'Chiicory', 'Mali', 'Gaegu', sans-serif;
-  font-size: 16px;
-  color: var(--color-normal);
-  background: transparent;
-  border: 1px solid var(--color-normal);
-  padding: 6px 12px;
-  cursor: pointer;
-}
-
-input, textarea {
-  cursor: text;
-  width: 100%;
-  margin-bottom: 8px;
-}
-
-button:hover {
-  background-color: rgba(56, 124, 211, 0.08);
-}
-
-button.active {
-  background-color: var(--color-normal);
-  color: #FFFFFF;
-}
-
-.main-nav, .sub-nav, .audio-controls, .card-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.tab-panel, .skill-panel {
-  display: none;
-}
-
-.tab-panel.active, .skill-panel.active {
-  display: block;
 }
 
 .hidden {
   display: none !important;
 }
 
-/* Flashcard từ vựng */
-.flashcard-box {
-  border: 1px solid var(--color-normal);
-  padding: 20px;
-  margin-bottom: 12px;
+/* ==========================================================================
+   3. KHUNG WIREFRAME CHỜ CHÈN ẢNH VẼ TAY IBIS PAINT
+   ========================================================================== */
+.wire-box {
+  border: 2px dashed rgba(56, 124, 211, 0.55);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-normal);
+  font-family: inherit;
+}
+
+.ibis-slot {
+  position: relative;
+}
+
+.ibis-slot::after {
+  content: attr(data-slot);
+  position: absolute;
+  bottom: 4px;
+  right: 10px;
+  font-size: 11px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.ibis-slot > img {
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   4. BỐ CỤC TỔNG THỂ: BANNER + MENU CHÍNH + SIDEBAR + NỘI DUNG
+   ========================================================================== */
+.page-container {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* Banner giữa trang */
+.banner-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.banner-box {
+  width: 100%;
+  max-width: 440px;
+  padding: 12px 24px;
   text-align: center;
 }
 
-.big-text {
+.site-title {
+  margin: 0;
   font-size: 28px;
   font-weight: 700;
-  margin: 12px 0;
 }
 
-.pinterest-frame {
-  max-width: 260px;
-  min-height: 160px;
-  margin: 0 auto 12px;
-  border: 1px dashed var(--color-note);
+/* Hàng 3 tab chính */
+.main-nav {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.main-tab {
+  flex: 1;
+  max-width: 190px;
+  padding: 12px 10px;
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.main-tab.active {
+  border-style: solid;
+  border-width: 2.5px;
+  background-color: rgba(56, 124, 211, 0.08);
+}
+
+/* Bố cục 2 cột: Thanh menu ở cạnh (220px) + Khung học tập bên phải */
+.workspace {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  padding: 16px 12px;
+}
+
+.sidebar-title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  border-bottom: 1.5px dashed rgba(56, 124, 211, 0.4);
+  padding-bottom: 8px;
+}
+
+.sidebar-list {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.side-btn {
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.side-btn.active {
+  border-style: solid;
+  border-width: 2px;
+  background-color: rgba(56, 124, 211, 0.08);
+}
+
+.main-stage {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Hàng tab phụ (Thẻ lật / Đố vui hoặc Nghe / Nói / Đọc / Viết) */
+.sub-nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sub-tab {
+  min-width: 82px;
+  padding: 8px 16px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sub-tab.active {
+  border-style: solid;
+  border-width: 2.5px;
+  background-color: rgba(56, 124, 211, 0.08);
+}
+
+.tab-panel,
+.skill-panel {
+  display: none;
+}
+
+.tab-panel.active,
+.skill-panel.active {
+  display: block;
+}
+
+/* ==========================================================================
+   5. CHI TIẾT TỪNG MỤC GIỐNG 3 ẢNH MẪU
+   ========================================================================== */
+/* Ảnh 2: Flashcard từ vựng */
+.counter-text {
+  text-align: center;
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.big-card {
+  min-height: 290px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.big-word {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 10px 0 14px;
+}
+
+.pinterest-slot {
+  width: 220px;
+  min-height: 130px;
+  margin: 0 auto 12px;
+  border: 1.5px dashed var(--color-note);
+  border-radius: 10px;
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 8px;
 }
 
-.pinterest-frame img {
+.pinterest-slot img {
   max-width: 100%;
-  max-height: 200px;
-  object-fit: cover;
+  max-height: 160px;
+  border-radius: 8px;
 }
 
-/* Khối ngữ pháp & bài tập */
-.content-block, .grammar-item, .exercise-item {
-  border: 1px solid rgba(56, 124, 211, 0.4);
-  padding: 14px;
-  margin-bottom: 14px;
-}
-
-.note-box {
-  border: 1px dashed var(--color-note);
-  padding: 10px 14px;
-  margin: 10px 0;
-  color: var(--color-note);
-}
-
-table {
+/* Khung lồng bên trong thẻ (dùng cho ví dụ Flashcard và Ngữ pháp) */
+.inner-box {
   width: 100%;
-  border-collapse: collapse;
-  margin: 10px 0;
-}
-
-th, td {
-  border: 1px solid var(--color-normal);
-  padding: 8px;
+  border: 1.5px dashed rgba(56, 124, 211, 0.45);
+  padding: 14px 16px;
+  margin-top: 8px;
   text-align: left;
 }
 
-/* Lưới giấy ô vuông Wongoji */
+/* Hàng 4 nút điều khiển dưới Flashcard: [ ◀ ] [ 🔊 ] [ ↻ Lật thẻ ] [ ▶ ] */
+.flashcard-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.ctrl-btn {
+  min-width: 56px;
+  height: 48px;
+  padding: 0 14px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.flip-btn {
+  min-width: 130px;
+}
+
+.ctrl-btn:hover,
+.mini-btn:hover {
+  border-style: solid;
+  background-color: rgba(56, 124, 211, 0.08);
+}
+
+.mini-btn {
+  padding: 8px 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pinterest-bar {
+  display: flex;
+  gap: 8px;
+}
+
+/* Ảnh 1 & 3: Khung đề bài + danh sách thẻ xếp dọc */
+.prompt-box {
+  padding: 22px 20px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.prompt-title {
+  margin: 0 0 14px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stack-card {
+  padding: 18px 20px;
+  text-align: left;
+}
+
+.stack-card.clickable {
+  cursor: pointer;
+}
+
+.stack-card.clickable:hover {
+  border-style: solid;
+  background-color: rgba(56, 124, 211, 0.05);
+}
+
+.stack-card.correct {
+  border: 2.5px solid var(--color-normal);
+  background-color: rgba(56, 124, 211, 0.08);
+}
+
+.stack-card.wrong {
+  border: 2.5px solid var(--color-note);
+  color: var(--color-note);
+}
+
+.note-card {
+  border-color: var(--color-note);
+}
+
+input[type="text"],
+input[type="url"],
+input[type="password"],
+textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px dashed var(--color-normal);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 16px;
+  color: var(--color-normal);
+  background: transparent;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-style: solid;
+}
+
+/* Giấy ô vuông Wongoji */
 .wongoji-grid {
   display: grid;
   grid-template-columns: repeat(20, 1fr);
-  border-top: 1px solid var(--color-note);
-  border-left: 1px solid var(--color-note);
+  border-top: 1.5px solid var(--color-note);
+  border-left: 1.5px solid var(--color-note);
   margin-top: 12px;
 }
 
 .wongoji-cell {
   aspect-ratio: 1 / 1;
-  border-right: 1px solid var(--color-note);
-  border-bottom: 1px solid var(--color-note);
+  border-right: 1.5px solid var(--color-note);
+  border-bottom: 1.5px solid var(--color-note);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'HelloFont ID ShanLanTi KR', 'Gaegu', sans-serif;
-  font-size: 18px;
-  color: var(--color-normal);
+  font-size: 16px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) {
+  .workspace {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+  }
+  .sidebar-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .side-btn {
+    width: auto;
+  }
   .wongoji-grid {
     grid-template-columns: repeat(10, 1fr);
   }
